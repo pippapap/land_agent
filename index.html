@@ -448,8 +448,29 @@
             font-weight: 500;
         }
 
-        tr:hover td {
+                tr:hover td {
             background: #f8fafc;
+        }
+
+        /* 지역별 1위 송출인원 행 옅은 파란색 음영 배색 */
+        tr.top-region-row td {
+            background-color: #f0f7ff !important;
+        }
+
+        tr.top-region-row:hover td {
+            background-color: #e0f2fe !important;
+        }
+
+        .top-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            background: #dbeafe;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
         }
 
         .text-right {
@@ -1136,7 +1157,7 @@
                             fontFamily: 'Pretendard, sans-serif'
                         }
                     },
-                    grid: { left: '3%', right: '4%', top: '50px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
+                    grid: { left: '3%', right: '4%', top: '65px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
                     barCategoryGap: '40%',
                     xAxis: {
                         type: 'category',
@@ -1424,56 +1445,62 @@
                     currArray.filter(d => d.협력사 === p).reduce((s, d) => s + (d[dataField] || 0), 0)
                 );
 
-                // 이전 막대 총합 레이블
+                                // 이전 막대 최상단 총합 레이블 (투명 더미 슬라이스로 위치 고정)
                 series.push({
                     name: '__prev_total_label__',
                     type: 'bar',
                     stack: prevLegend,
                     silent: true,
-                    itemStyle: { opacity: 0 },
+                    itemStyle: { color: 'transparent', borderColor: 'transparent' },
                     label: {
                         show: true,
                         position: 'top',
+                        distance: 6,
                         color: '#475569',
                         fontSize: 11,
                         fontWeight: 700,
                         fontFamily: 'Pretendard, sans-serif',
-                        backgroundColor: 'rgba(241,245,249,0.85)',
-                        borderRadius: 3,
-                        padding: [2, 4],
+                        backgroundColor: 'rgba(241, 245, 249, 0.95)',
+                        borderColor: '#cbd5e1',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        padding: [2, 5],
                         formatter: p => {
                             const val = prevTotals[p.dataIndex];
-                            if (!val || val === 0) return '';
+                            if (!val || val <= 0) return '';
                             return dataField === '지상비' ? formatCompactWon(val) : formatNum(val);
                         }
                     },
-                    data: partners.map(() => 0)
+                    data: partners.map((_, i) => (prevTotals[i] > 0 ? 0.0001 : 0))
                 });
 
-                // 당월 막대 총합 레이블
+                // 당월 막대 최상단 총합 레이블 (투명 더미 슬라이스로 위치 고정)
                 series.push({
                     name: '__curr_total_label__',
                     type: 'bar',
                     stack: currentMonthDef,
                     silent: true,
-                    itemStyle: { opacity: 0 },
+                    itemStyle: { color: 'transparent', borderColor: 'transparent' },
                     label: {
                         show: true,
                         position: 'top',
+                        distance: 6,
                         color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: 800,
                         fontFamily: 'Pretendard, sans-serif',
-                        backgroundColor: dataField === '인원' ? 'rgba(219,234,254,0.9)' : 'rgba(237,233,254,0.9)',
-                        borderRadius: 3,
-                        padding: [2, 5],
+                        backgroundColor: dataField === '인원' ? 'rgba(219, 234, 254, 0.95)' : 'rgba(237, 233, 254, 0.95)',
+                        borderColor: dataField === '인원' ? '#bfdbfe' : '#ddd6fe',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        padding: [2, 6],
                         formatter: p => {
                             const val = currTotals[p.dataIndex];
-                            if (!val || val === 0) return '';
+                            if (!val || val <= 0) return '';
                             return dataField === '지상비' ? formatCompactWon(val) : formatNum(val);
                         }
                     },
-                    data: partners.map(() => 0)
+                    data: partners.map((_, i) => (currTotals[i] > 0 ? 0.0001 : 0))
                 });
 
                 return series;
@@ -1681,6 +1708,16 @@
             let displayArray = [...dataArray];
 
             if (tableViewMode === 'list') {
+                // 지역별 최고 송출인원 맵 계산 (동일 지역 내 1위 행 음영 표시용)
+                const regionMaxMap = {};
+                displayArray.forEach(d => {
+                    const groupKey = showTeam ? `${d.팀}___${d.지역}` : d.지역;
+                    const p = d.인원 || 0;
+                    if (!regionMaxMap[groupKey] || p > regionMaxMap[groupKey]) {
+                        regionMaxMap[groupKey] = p;
+                    }
+                });
+
                 if (!sortCol) {
                     displayArray.sort((a, b) => (b.인원 || 0) - (a.인원 || 0));
                 } else {
@@ -1695,12 +1732,19 @@
                 }
                 displayArray.forEach(d => {
                     const tr = document.createElement('tr');
+                    const groupKey = showTeam ? `${d.팀}___${d.지역}` : d.지역;
+                    const isTop = (d.인원 > 0 && d.인원 === regionMaxMap[groupKey]);
+                    if (isTop) tr.className = 'top-region-row';
+
                     if (showTeam) tr.innerHTML += `<td>${d.팀}</td>`;
-                    tr.innerHTML += `<td><strong>${d.협력사}</strong></td><td>${d.지역}</td><td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td><td class="text-right">${formatNum(d.지상비)}</td>`;
+                    tr.innerHTML += `<td><strong>${d.협력사}</strong>${isTop ? '<span class="top-badge">1위</span>' : ''}</td>
+                        <td>${d.지역}</td>
+                        <td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td>
+                        <td class="text-right">${formatNum(d.지상비)}</td>`;
                     tBody.appendChild(tr);
                 });
             } else if (tableViewMode === 'group') {
-                // 팀별 / 지역별 독립 그룹화 (팀과 지역이 고유하게 매핑되어 팀 데이터가 절대 섞이지 않음)
+                // 팀별 / 지역별 독립 그룹화
                 const groupMap = {};
                 displayArray.forEach(d => {
                     const groupKey = showTeam ? `${d.팀}___${d.지역}` : d.지역;
@@ -1743,6 +1787,9 @@
                     </td>`;
                     tBody.appendChild(gRow);
 
+                    // 해당 지역 그룹 내 송출인원 1위 값 계산
+                    const maxPersonnelInGroup = Math.max(...g.items.map(item => item.인원 || 0));
+
                     const arr = [...g.items];
                     if (sortCol) {
                         arr.sort((a, b) => {
@@ -1759,8 +1806,11 @@
 
                     arr.forEach(d => {
                         const tr = document.createElement('tr');
+                        const isTop = (d.인원 > 0 && d.인원 === maxPersonnelInGroup);
+                        if (isTop) tr.className = 'top-region-row';
+
                         if (showTeam) tr.innerHTML += `<td><span style="color:#64748b; font-size:0.9rem;">${d.팀}</span></td>`;
-                        tr.innerHTML += `<td style="padding-left:${showTeam ? '20px' : '24px'}"><strong>${d.협력사}</strong></td>
+                        tr.innerHTML += `<td style="padding-left:${showTeam ? '20px' : '24px'}"><strong>${d.협력사}</strong>${isTop ? '<span class="top-badge">1위</span>' : ''}</td>
                             <td style="color:var(--text-secondary)">${d.지역}</td>
                             <td class="text-right" style="color:var(--accent-cyan);font-weight:700">${formatNum(d.인원)}</td>
                             <td class="text-right">${formatNum(d.지상비)}</td>`;
