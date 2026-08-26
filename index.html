@@ -851,7 +851,11 @@
                 initSidebar();
                 initCharts();
                 setupEventListeners();
-                applyFilter();
+                // 브라우저 레이아웃 완료 후 차트 렌더링 (초기 찌그러짐 방지)
+                requestAnimationFrame(() => {
+                    Object.values(charts).forEach(c => c && c.resize());
+                    applyFilter();
+                });
 
             } catch (err) {
                 console.error('데이터 로드 실패:', err);
@@ -999,6 +1003,10 @@
         function initCharts() {
             charts.chart1 = echarts.init(document.getElementById('chart1'));
             charts.chart2 = echarts.init(document.getElementById('chart2'));
+            // 창 크기 변경 시 차트 자동 재조정
+            window.addEventListener('resize', () => {
+                Object.values(charts).forEach(c => c && c.resize());
+            });
         }
 
         function formatCompactWon(val) {
@@ -1184,6 +1192,8 @@
                         }
                     ]
                 }, true);
+                // setOption 직후 정확한 크기로 강제 재렌더링
+                requestAnimationFrame(() => chartInstance.resize());
             };
 
             setGroupChart(charts.chart1, persPrevS, persCurrS, '인원', new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#38bdf8' }, { offset: 1, color: '#1d4ed8' }]));
@@ -1498,6 +1508,8 @@
                     ] : [],
                     series: getSeries(field)
                 }, true);
+                // setOption 직후 정확한 크기로 강제 재렌더링
+                requestAnimationFrame(() => chartInstance.resize());
             };
 
             setStackedChart(charts.chart1, '인원');
