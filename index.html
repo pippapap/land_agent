@@ -785,8 +785,8 @@
         let chartCompareType = 'mom'; // 'mom' | 'yoy'
         let tableViewMode = 'list'; // 'list' | 'group'
 
-        let sortCol = '';
-        let sortDesc = false;
+        let sortCol = '인원';
+        let sortDesc = true;
 
         // 팀 고정 순서 (정렬 기준)
         const TEAM_ORDER = [
@@ -1088,7 +1088,7 @@
                             fontSize: 12,
                             fontWeight: 600,
                             interval: 0,
-                            rotate: uniqueKeys.length > 8 ? 20 : 0,
+                            rotate: 0, // 기울기 없음
                             margin: 12
                         },
                         axisLine: { lineStyle: { color: '#cbd5e1' } }
@@ -1126,7 +1126,7 @@
                             data: prevS,
                             barMaxWidth: 32,
                             itemStyle: {
-                                color: 'rgba(148, 163, 184, 0.35)',
+                                color: '#cbd5e1', // 회색 계열
                                 borderColor: '#94a3b8',
                                 borderWidth: 1,
                                 borderRadius: [3, 3, 0, 0]
@@ -1181,31 +1181,59 @@
             const regions = [...new Set([...currArray, ...prevArray].map(d => d.지역))].sort();
             const prevLegend = prevNameStr || '비교 없음';
 
-            // 1. 송출 인원용 블루/시안 톤온톤 팔레트
+            // 1. 송출 인원용 블루 계열 팔레트 (명도/채도 차이가 뚜렷하여 서로 확실히 구분됨)
             const personPalette = [
-                '#1d4ed8', '#2563eb', '#0284c7', '#0ea5e9', '#06b6d4',
-                '#3b82f6', '#60a5fa', '#38bdf8', '#67e8f9', '#1e40af'
+                '#1e3a8a', // 1. 딥 네이비 (어두움)
+                '#0ea5e9', // 2. 브라이트 스카이 (밝고 쨍함)
+                '#2563eb', // 3. 코발트 로얄블루 (선명함)
+                '#06b6d4', // 4. 비비드 시안 (청록빛)
+                '#93c5fd', // 5. 파스텔 라이트블루 (매우 밝음)
+                '#1d4ed8', // 6. 클래식 다크블루
+                '#38bdf8', // 7. 맑은 하늘색
+                '#3b82f6', // 8. 미디엄 블루
+                '#0369a1', // 9. 짙은 오션블루
+                '#67e8f9'  // 10. 밝은 민트시안
             ];
 
-            // 2. 지상비용 퍼플/인디고 톤온톤 팔레트
+            // 2. 지상비용 퍼플 계열 팔레트 (명도/채도 차이가 뚜렷하여 서로 확실히 구분됨)
             const costPalette = [
-                '#4f46e5', '#6366f1', '#7c3aed', '#8b5cf6', '#9333ea',
-                '#a855f7', '#818cf8', '#a78bfa', '#c084fc', '#4338ca'
+                '#4338ca', // 1. 딥 인디고 (어두운 남보라)
+                '#c084fc', // 2. 라이트 라벤더 (밝은 연보라)
+                '#7c3aed', // 3. 비비드 바이올렛 (선명한 보라)
+                '#a855f7', // 4. 브라이트 퍼플 (밝은 자주보라)
+                '#312e81', // 5. 다크 네이비인디고 (가장 어두움)
+                '#e879f9', // 6. 브라이트 오키드 핑크 (화사한 핑크보라)
+                '#6366f1', // 7. 로얄 인디고 (중간 톤)
+                '#d8b4fe', // 8. 페일 바이올렛 (파스텔톤)
+                '#9333ea', // 9. 딥 마젠타퍼플
+                '#818cf8'  // 10. 소프트 인디고
+            ];
+
+            // 3. 전월/전년동월 비교용 회색 계열 팔레트 (지역별 구분이 가능한 그레이톤)
+            const grayPalette = [
+                '#64748b', // Slate Gray
+                '#cbd5e1', // Light Slate
+                '#475569', // Dark Slate
+                '#94a3b8', // Medium Gray
+                '#e2e8f0', // Very Light Slate
+                '#334155', // Deep Charcoal
+                '#b0bec5', // Cool Silver
+                '#78909c'  // Blue Gray
             ];
 
             const getSeries = (dataField) => {
                 const series = [];
                 const palette = (dataField === '인원') ? personPalette : costPalette;
 
-                // 범례 표시용 더미 시리즈 (상단 범례 텍스트 매칭용)
+                // 범례 표시용 더미 시리즈 (회색 vs 당월 대표색)
                 series.push(
                     {
                         name: `${prevLegend} (이전)`,
                         type: 'bar',
                         data: [],
                         itemStyle: {
-                            color: dataField === '인원' ? 'rgba(37, 99, 235, 0.35)' : 'rgba(99, 102, 241, 0.35)',
-                            borderColor: dataField === '인원' ? '#2563eb' : '#6366f1',
+                            color: '#94a3b8',
+                            borderColor: '#64748b',
                             borderWidth: 1
                         }
                     },
@@ -1214,15 +1242,16 @@
                         type: 'bar',
                         data: [],
                         itemStyle: {
-                            color: dataField === '인원' ? '#2563eb' : '#6366f1'
+                            color: dataField === '인원' ? '#2563eb' : '#7c3aed'
                         }
                     }
                 );
 
                 regions.forEach((r, idx) => {
-                    const color = palette[idx % palette.length];
+                    const currColor = palette[idx % palette.length];
+                    const prevColor = grayPalette[idx % grayPalette.length];
 
-                    // 이전 데이터 스택 (부드러운 반투명 톤)
+                    // 이전 데이터 스택 (전년동월/전월: 회색 계열)
                     series.push({
                         name: `${r} (${prevLegend})`,
                         stack: prevLegend,
@@ -1230,16 +1259,15 @@
                         barGap: '15%',
                         barMaxWidth: 38,
                         itemStyle: {
-                            color: color,
-                            opacity: 0.35,
-                            borderColor: color,
-                            borderWidth: 1,
+                            color: prevColor,
+                            borderColor: '#ffffff',
+                            borderWidth: 1.5,
                             borderRadius: [2, 2, 0, 0]
                         },
                         label: {
                             show: true,
                             position: 'inside',
-                            color: '#1e293b',
+                            color: '#0f172a',
                             fontSize: 11,
                             fontWeight: 600,
                             formatter: p => {
@@ -1257,15 +1285,16 @@
                         })
                     });
 
-                    // 당월 데이터 스택 (선명하고 또렷한 톤)
+                    // 당월 데이터 스택 (선명하고 구분감 있는 계열별 색상)
                     series.push({
                         name: `${r} (${currentMonthDef})`,
                         stack: currentMonthDef,
                         type: 'bar',
                         barMaxWidth: 38,
                         itemStyle: {
-                            color: color,
-                            opacity: 1,
+                            color: currColor,
+                            borderColor: '#ffffff',
+                            borderWidth: 1.5,
                             borderRadius: [3, 3, 0, 0]
                         },
                         label: {
@@ -1274,7 +1303,7 @@
                             color: '#ffffff',
                             fontSize: 11,
                             fontWeight: 'bold',
-                            textShadowColor: 'rgba(0, 0, 0, 0.4)',
+                            textShadowColor: 'rgba(0, 0, 0, 0.5)',
                             textShadowBlur: 2,
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
@@ -1391,7 +1420,7 @@
                             fontSize: 12,
                             fontWeight: 600,
                             interval: 0,
-                            rotate: partners.some(p => p.length > 5) ? 20 : 0,
+                            rotate: 0, // 기울기 없음
                             margin: 12
                         },
                         axisLine: { lineStyle: { color: '#cbd5e1' } }
@@ -1438,7 +1467,12 @@
         }
 
         function handleSort(colName) {
-            if (sortCol === colName) { sortDesc = !sortDesc; } else { sortCol = colName; sortDesc = false; }
+            if (sortCol === colName) {
+                sortDesc = !sortDesc;
+            } else {
+                sortCol = colName;
+                sortDesc = true; // 새로운 열 클릭 시 기본 내림차순(많은 순)
+            }
             applyFilter();
         }
 
@@ -1472,13 +1506,7 @@
 
             if (tableViewMode === 'list') {
                 if (!sortCol) {
-                    displayArray.sort((a, b) => {
-                        const ti = TEAM_ORDER.indexOf(a.팀), tj = TEAM_ORDER.indexOf(b.팀);
-                        if (ti !== tj) return ti - tj;
-                        const cmp = a.협력사.localeCompare(b.협력사, 'ko');
-                        if (cmp !== 0) return cmp;
-                        return a.지역.localeCompare(b.지역, 'ko');
-                    });
+                    displayArray.sort((a, b) => (b.인원 || 0) - (a.인원 || 0));
                 } else {
                     displayArray.sort((a, b) => {
                         let valA = a[sortCol], valB = b[sortCol];
@@ -1499,17 +1527,20 @@
                 const regionMap = {};
                 displayArray.forEach(d => { if (!regionMap[d.지역]) regionMap[d.지역] = []; regionMap[d.지역].push(d); });
 
+                const regionTotals = {};
+                Object.keys(regionMap).forEach(r => {
+                    regionTotals[r] = regionMap[r].reduce((sum, item) => sum + (item.인원 || 0), 0);
+                });
+
+                // 지역 그룹 헤더 정렬: 지역별 총 송출인원 내림차순(많은 순)
                 const sortedRegions = Object.keys(regionMap).sort((rA, rB) => {
-                    const tiA = TEAM_ORDER.indexOf(regionMap[rA][0]?.팀 || '');
-                    const tiB = TEAM_ORDER.indexOf(regionMap[rB][0]?.팀 || '');
-                    if (tiA !== tiB) return tiA - tiB;
-                    return rA.localeCompare(rB, 'ko');
+                    return (regionTotals[rB] || 0) - (regionTotals[rA] || 0);
                 });
 
                 sortedRegions.forEach(regionName => {
                     const gRow = document.createElement('tr');
                     gRow.className = 'group-header-row';
-                    gRow.innerHTML = `<td colspan="${showTeam ? 5 : 4}">[지역 구분] ${regionName}</td>`;
+                    gRow.innerHTML = `<td colspan="${showTeam ? 5 : 4}">[지역 구분] ${regionName} <span style="font-weight:normal; font-size:0.85rem; color:#64748b; margin-left:8px;">(지역 총 송출: ${formatNum(regionTotals[regionName])}명)</span></td>`;
                     tBody.appendChild(gRow);
 
                     const arr = regionMap[regionName];
@@ -1523,11 +1554,7 @@
                             return 0;
                         });
                     } else {
-                        arr.sort((a, b) => {
-                            const ti = TEAM_ORDER.indexOf(a.팀), tj = TEAM_ORDER.indexOf(b.팀);
-                            if (ti !== tj) return ti - tj;
-                            return a.협력사.localeCompare(b.협력사, 'ko');
-                        });
+                        arr.sort((a, b) => (b.인원 || 0) - (a.인원 || 0));
                     }
 
                     arr.forEach(d => {
