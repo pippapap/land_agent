@@ -762,6 +762,23 @@
             if (sessionStorage.getItem('auth') === '1') {
                 overlay.style.display = 'none';
                 app.style.display = 'flex';
+                // 세션 자동 로그인: display 변경 후 차트 resize 트리거
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        Object.values(charts).forEach(c => c && c.resize());
+                    }, 80);
+                });
+            }
+
+            function triggerChartsAfterLogin() {
+                // display:flex 적용 후 레이아웃 재계산 대기
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        Object.values(charts).forEach(c => c && c.resize());
+                        // 레이아웃 안정화 후 추가 resize
+                        setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 150);
+                    });
+                });
             }
 
             function tryLogin() {
@@ -770,6 +787,7 @@
                     overlay.style.display = 'none';
                     app.style.display = 'flex';
                     errMsg.textContent = '';
+                    triggerChartsAfterLogin();
                 } else {
                     errMsg.textContent = '⚠️ 비밀번호가 다릅니다.';
                     input.value = '';
@@ -797,34 +815,7 @@
         const TEAM_ORDER = [
             "동남아1팀", "동남아2팀", "동남아3팀", "일본팀", "중국팀",
             "서유럽팀", "스페인/북유럽팀", "동유럽팀", "지중해/인도/아프리카팀",
-            "프리미엄팀", "미주팀", "남태평양팀", "부산지점", "대구지점", "크루즈/테마팀"
-        ];
-
-        // 테마 색상 팔레트
-        const colors = {
-            primary: '#1d4ed8', cyan: '#2563eb', purple: '#4f46e5',
-            green: '#059669', orange: '#ea580c', red: '#dc2626',
-            text: '#1e293b', textMuted: '#64748b'
-        };
-
-        // === 데이터 전처리 (팀 병합) ===
-        function preprocessData() {
-            rawData.forEach(d => {
-                if (d.팀 === '태국파트' || d.팀 === '필리핀/말레이시아파트') {
-                    d.팀 = '동남아3팀';
-                }
-            });
-        }
-
-        async function fetchJsonSafe(url) {
-            try {
-                const res = await fetch(url);
-                if (res.ok) return await res.json();
-            } catch (e) { }
-            return null;
-        }
-
-        async function loadData() {
+            "프리미엄팀", "미주팀", "남태평양팀", "부산�        async function loadData() {
             try {
                 // 1. 매니페스트 파일 로드 (./data/index.json 또는 ./index.json 시도)
                 let manifest = await fetchJsonSafe('./data/index.json');
@@ -845,6 +836,38 @@
                 }
 
                 if (rawData.length === 0) throw new Error('데이터 로드 실패');
+
+                preprocessData();
+                extractMonthsAndInit();
+                initSidebar();
+                initCharts();
+                setupEventListeners();
+
+                // 자동 로그인(세션) 상태에서는 display:flex이미 설정됨
+                // 로그인 화면에서는 실제 마운트 후 카드 수동 resize 발생
+                // => 양쪽 코드경로에서만 applyFilter 호출, resize는 login초기 코드에서 중복 처리
+                setTimeout(() => {
+                    Object.values(charts).forEach(c => c && c.resize());
+                    applyFilter();
+                    setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 200);
+                }, 50);
+
+                // ResizeObserver: 차트 컨테이너 크기 변경 시 자동 재렌더링
+                // (display:none 해제 등 레이아웃 변화 감지)
+                if (typeof ResizeObserver !== 'undefined') {
+                    const ro = new ResizeObserver(() => {
+                        Object.values(charts).forEach(c => c && c.resize());
+                    });
+                    document.querySelectorAll('#chart1, #chart2').forEach(el => ro.observe(el));
+                }
+
+            } catch (err) {
+                console.error('데이터 로드 실패:', err);
+                document.getElementById('currentTeamTitle').innerText = '⚠️ 데이터 로드 실패 — 로컈 서버 또는 GitHub Pages에서 확인해주세요.';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);실패');
 
                 preprocessData();
                 extractMonthsAndInit();
@@ -1272,18 +1295,25 @@
                 const sortedRegionsPrev = [...regions].sort((a, b) => (prevRegionTotals[b] || 0) - (prevRegionTotals[a] || 0));
 
                 // 상단 범례용 더미 시리즈
+                // ※ stack + data:0배열 필수: 없으면 독립 바 그룹으로 인식되어 레이아웃이 우측 쏠림
                 series.push(
                     {
                         name: `${prevLegend} (이전)`,
                         type: 'bar',
-                        data: [],
-                        itemStyle: { color: '#94a3b8', borderColor: '#64748b', borderWidth: 1 }
+                        stack: prevLegend,
+                        silent: true,
+                        itemStyle: { color: '#94a3b8', borderColor: '#64748b', borderWidth: 1 },
+                        label: { show: false },
+                        data: partners.map(() => 0)
                     },
                     {
                         name: `${currentMonthDef} (당월)`,
                         type: 'bar',
-                        data: [],
-                        itemStyle: { color: dataField === '인원' ? '#2563eb' : '#7c3aed' }
+                        stack: currentMonthDef,
+                        silent: true,
+                        itemStyle: { color: dataField === '인원' ? '#2563eb' : '#7c3aed' },
+                        label: { show: false },
+                        data: partners.map(() => 0)
                     }
                 );
 
@@ -1320,12 +1350,13 @@
                             fontSize: 11,
                             fontWeight: 600,
                             fontFamily: 'Pretendard, sans-serif',
+                            // 막대 세그먼트가 글씨보다 작으면 레이블 제외
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 if (dataField === '인원') {
-                                    return p.value >= 20 ? formatNum(p.value) : '';
+                                    return p.value >= 30 ? formatNum(p.value) : '';
                                 } else {
-                                    return p.value >= 10000000 ? formatCompactWon(p.value) : '';
+                                    return p.value >= 20000000 ? formatCompactWon(p.value) : '';
                                 }
                             }
                         },
@@ -1356,12 +1387,13 @@
                             fontFamily: 'Pretendard, sans-serif',
                             textShadowColor: currShade.text === '#ffffff' ? 'rgba(0, 0, 0, 0.45)' : 'transparent',
                             textShadowBlur: 2,
+                            // 막대 세그먼트가 글씨보다 작으면 레이블 제외
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 if (dataField === '인원') {
-                                    return p.value >= 20 ? formatNum(p.value) : '';
+                                    return p.value >= 30 ? formatNum(p.value) : '';
                                 } else {
-                                    return p.value >= 10000000 ? formatCompactWon(p.value) : '';
+                                    return p.value >= 20000000 ? formatCompactWon(p.value) : '';
                                 }
                             }
                         },
@@ -1374,6 +1406,70 @@
 
                 // currColorMap을 series 배열의 숨겨진 속성으로 전달
                 series._currColorMap = currColorMap;
+
+                // ──────────────────────────────────────────────────
+                // 각 막대 최상단 총합 레이블 (투명 더미 시리즈)
+                // 값이 0이므로 스택 높이에 영향 없이 레이블만 노출
+                // ──────────────────────────────────────────────────
+                const prevTotals = partners.map(p =>
+                    prevArray.filter(d => d.협력사 === p).reduce((s, d) => s + (d[dataField] || 0), 0)
+                );
+                const currTotals = partners.map(p =>
+                    currArray.filter(d => d.협력사 === p).reduce((s, d) => s + (d[dataField] || 0), 0)
+                );
+
+                // 이전 막대 총합 레이블
+                series.push({
+                    name: '__prev_total_label__',
+                    type: 'bar',
+                    stack: prevLegend,
+                    silent: true,
+                    itemStyle: { opacity: 0 },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        color: '#475569',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        fontFamily: 'Pretendard, sans-serif',
+                        backgroundColor: 'rgba(241,245,249,0.85)',
+                        borderRadius: 3,
+                        padding: [2, 4],
+                        formatter: p => {
+                            const val = prevTotals[p.dataIndex];
+                            if (!val || val === 0) return '';
+                            return dataField === '지상비' ? formatCompactWon(val) : formatNum(val);
+                        }
+                    },
+                    data: partners.map(() => 0)
+                });
+
+                // 당월 막대 총합 레이블
+                series.push({
+                    name: '__curr_total_label__',
+                    type: 'bar',
+                    stack: currentMonthDef,
+                    silent: true,
+                    itemStyle: { opacity: 0 },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
+                        fontSize: 12,
+                        fontWeight: 800,
+                        fontFamily: 'Pretendard, sans-serif',
+                        backgroundColor: dataField === '인원' ? 'rgba(219,234,254,0.9)' : 'rgba(237,233,254,0.9)',
+                        borderRadius: 3,
+                        padding: [2, 5],
+                        formatter: p => {
+                            const val = currTotals[p.dataIndex];
+                            if (!val || val === 0) return '';
+                            return dataField === '지상비' ? formatCompactWon(val) : formatNum(val);
+                        }
+                    },
+                    data: partners.map(() => 0)
+                });
+
                 return series;
             };
 
@@ -1474,7 +1570,7 @@
                     grid: {
                         left: '3%',
                         right: '4%',
-                        top: '50px',
+                        top: '60px',
                         bottom: needsZoom ? '70px' : '45px',
                         containLabel: true
                     },
