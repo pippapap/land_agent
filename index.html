@@ -355,7 +355,7 @@
 
         .chart {
             width: 100%;
-            height: 380px;
+            height: 480px;
         }
 
         /* Table */
@@ -996,6 +996,21 @@
             charts.chart2 = echarts.init(document.getElementById('chart2'));
         }
 
+        function formatCompactWon(val) {
+            if (!val || val === 0) return '';
+            if (val >= 100000000) {
+                const v = (val / 100000000).toFixed(1);
+                return (v.endsWith('.0') ? v.slice(0, -2) : v) + '억';
+            }
+            if (val >= 10000000) {
+                return Math.round(val / 10000000) + '천만';
+            }
+            if (val >= 1000000) {
+                return Math.round(val / 1000000) + '백만';
+            }
+            return formatNum(val);
+        }
+
         function updateAllCharts(currArray, prevArray, prevNameStr) {
             document.getElementById('chart1Title').innerText = `팀별 송출 인원 비교`;
             document.getElementById('chart2Title').innerText = `팀별 지상비 비교`;
@@ -1019,22 +1034,139 @@
 
             const prevLegend = prevNameStr || '비교 없음';
 
-            const setGroupChart = (chartInstance, prevS, currS, currColor) => {
+            const setGroupChart = (chartInstance, prevS, currS, field, currGradient) => {
+                const unit = (field === '인원') ? '명' : '원';
+                const needsZoom = uniqueKeys.length > 9;
+
                 chartInstance.setOption({
-                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                    legend: { data: [prevLegend, currentMonthDef], textStyle: { color: colors.text } },
-                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-                    xAxis: { type: 'category', data: uniqueKeys, axisLabel: { color: colors.textMuted, interval: 0 } },
-                    yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } } },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                        borderColor: '#cbd5e1',
+                        borderWidth: 1,
+                        padding: [12, 16],
+                        textStyle: { color: '#1e293b', fontSize: 12 },
+                        extraCssText: 'box-shadow: 0 10px 25px rgba(0,0,0,0.12); border-radius: 12px; min-width: 220px;',
+                        formatter: function (params) {
+                            if (!params || !params.length) return '';
+                            const teamName = params[0].axisValue;
+                            const prevVal = params[0]?.value || 0;
+                            const currVal = params[1]?.value || 0;
+                            const diff = currVal - prevVal;
+                            const rate = prevVal > 0 ? ((diff / prevVal) * 100).toFixed(1) + '%' : (currVal > 0 ? '신규' : '0%');
+                            const diffColor = diff > 0 ? '#16a34a' : (diff < 0 ? '#dc2626' : '#64748b');
+                            const diffSign = diff > 0 ? '+' : '';
+
+                            return `<div style="font-weight:800; font-size:14px; margin-bottom:8px; color:#0f172a; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px;">📊 ${teamName}</div>
+                                <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:4px; font-size:12px;">
+                                    <span style="color:#64748b;">${prevLegend} (이전):</span>
+                                    <strong style="color:#475569;">${formatNum(prevVal)} ${unit}</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:6px; font-size:12px;">
+                                    <span style="color:${field === '인원' ? '#2563eb' : '#6366f1'}; font-weight:700;">${currentMonthDef} (당월):</span>
+                                    <strong style="color:#0f172a;">${formatNum(currVal)} ${unit}</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; gap:16px; padding-top:4px; border-top:1px dashed #e2e8f0; font-size:12px;">
+                                    <span style="color:#64748b;">증감:</span>
+                                    <strong style="color:${diffColor};">${diffSign}${formatNum(diff)} ${unit} (${diffSign}${rate})</strong>
+                                </div>`;
+                        }
+                    },
+                    legend: {
+                        data: [`${prevLegend} (이전)`, `${currentMonthDef} (당월)`],
+                        top: 0,
+                        right: 12,
+                        textStyle: { color: '#475569', fontSize: 12, fontWeight: 600 }
+                    },
+                    grid: { left: '3%', right: '4%', top: '50px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        data: uniqueKeys,
+                        axisLabel: {
+                            color: '#1e293b',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            interval: 0,
+                            rotate: uniqueKeys.length > 8 ? 20 : 0,
+                            margin: 12
+                        },
+                        axisLine: { lineStyle: { color: '#cbd5e1' } }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#64748b',
+                            fontSize: 11,
+                            formatter: val => field === '지상비' ? formatCompactWon(val) : formatNum(val)
+                        },
+                        splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } }
+                    },
+                    dataZoom: needsZoom ? [
+                        {
+                            type: 'slider',
+                            show: true,
+                            xAxisIndex: [0],
+                            bottom: 8,
+                            height: 22,
+                            startValue: 0,
+                            endValue: 7,
+                            fillerColor: field === '인원' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                            borderColor: '#cbd5e1',
+                            handleStyle: { color: field === '인원' ? '#2563eb' : '#6366f1' },
+                            textStyle: { color: '#64748b', fontSize: 11 },
+                            brushSelect: false
+                        },
+                        { type: 'inside', xAxisIndex: [0], zoomOnMouseWheel: false, moveOnMouseMove: true }
+                    ] : [],
                     series: [
-                        { name: prevLegend, type: 'bar', data: prevS, itemStyle: { color: 'rgba(148, 163, 184, 0.4)' }, barGap: '10%' },
-                        { name: currentMonthDef, type: 'bar', data: currS, itemStyle: { color: currColor, borderRadius: [4, 4, 0, 0] } }
+                        {
+                            name: `${prevLegend} (이전)`,
+                            type: 'bar',
+                            data: prevS,
+                            barMaxWidth: 32,
+                            itemStyle: {
+                                color: 'rgba(148, 163, 184, 0.35)',
+                                borderColor: '#94a3b8',
+                                borderWidth: 1,
+                                borderRadius: [3, 3, 0, 0]
+                            },
+                            barGap: '15%',
+                            label: {
+                                show: true,
+                                position: 'top',
+                                color: '#64748b',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value)) : ''
+                            }
+                        },
+                        {
+                            name: `${currentMonthDef} (당월)`,
+                            type: 'bar',
+                            data: currS,
+                            barMaxWidth: 32,
+                            itemStyle: {
+                                color: currGradient,
+                                borderRadius: [4, 4, 0, 0],
+                                shadowColor: field === '인원' ? 'rgba(37, 99, 235, 0.25)' : 'rgba(99, 102, 241, 0.25)',
+                                shadowBlur: 4
+                            },
+                            label: {
+                                show: true,
+                                position: 'top',
+                                color: field === '인원' ? '#1d4ed8' : '#6366f1',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value)) : ''
+                            }
+                        }
                     ]
                 }, true);
             };
 
-            setGroupChart(charts.chart1, persPrevS, persCurrS, new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.cyan }, { offset: 1, color: colors.primary }]));
-            setGroupChart(charts.chart2, costPrevS, costCurrS, new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.purple }, { offset: 1, color: colors.primary }]));
+            setGroupChart(charts.chart1, persPrevS, persCurrS, '인원', new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#38bdf8' }, { offset: 1, color: '#1d4ed8' }]));
+            setGroupChart(charts.chart2, costPrevS, costCurrS, '지상비', new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#c084fc' }, { offset: 1, color: '#4f46e5' }]));
         }
 
         function updateTeamCharts(currArray, prevArray, prevNameStr) {
@@ -1048,46 +1180,255 @@
 
             const regions = [...new Set([...currArray, ...prevArray].map(d => d.지역))].sort();
             const prevLegend = prevNameStr || '비교 없음';
-            const palette = ['#1d4ed8', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#dc2626', '#14b8a6', '#6366f1'];
+
+            // 1. 송출 인원용 블루/시안 톤온톤 팔레트
+            const personPalette = [
+                '#1d4ed8', '#2563eb', '#0284c7', '#0ea5e9', '#06b6d4',
+                '#3b82f6', '#60a5fa', '#38bdf8', '#67e8f9', '#1e40af'
+            ];
+
+            // 2. 지상비용 퍼플/인디고 톤온톤 팔레트
+            const costPalette = [
+                '#4f46e5', '#6366f1', '#7c3aed', '#8b5cf6', '#9333ea',
+                '#a855f7', '#818cf8', '#a78bfa', '#c084fc', '#4338ca'
+            ];
 
             const getSeries = (dataField) => {
                 const series = [];
+                const palette = (dataField === '인원') ? personPalette : costPalette;
+
+                // 범례 표시용 더미 시리즈 (상단 범례 텍스트 매칭용)
+                series.push(
+                    {
+                        name: `${prevLegend} (이전)`,
+                        type: 'bar',
+                        data: [],
+                        itemStyle: {
+                            color: dataField === '인원' ? 'rgba(37, 99, 235, 0.35)' : 'rgba(99, 102, 241, 0.35)',
+                            borderColor: dataField === '인원' ? '#2563eb' : '#6366f1',
+                            borderWidth: 1
+                        }
+                    },
+                    {
+                        name: `${currentMonthDef} (당월)`,
+                        type: 'bar',
+                        data: [],
+                        itemStyle: {
+                            color: dataField === '인원' ? '#2563eb' : '#6366f1'
+                        }
+                    }
+                );
+
                 regions.forEach((r, idx) => {
                     const color = palette[idx % palette.length];
+
+                    // 이전 데이터 스택 (부드러운 반투명 톤)
                     series.push({
-                        name: r, stack: prevLegend, type: 'bar', barGap: '5%',
-                        itemStyle: { color, opacity: 0.35 },
-                        label: { show: true, position: 'inside', color: '#1e293b', fontSize: 13, formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
-                        data: partners.map(p => { const match = prevArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
+                        name: `${r} (${prevLegend})`,
+                        stack: prevLegend,
+                        type: 'bar',
+                        barGap: '15%',
+                        barMaxWidth: 38,
+                        itemStyle: {
+                            color: color,
+                            opacity: 0.35,
+                            borderColor: color,
+                            borderWidth: 1,
+                            borderRadius: [2, 2, 0, 0]
+                        },
+                        label: {
+                            show: true,
+                            position: 'inside',
+                            color: '#1e293b',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            formatter: p => {
+                                if (!p.value || p.value <= 0) return '';
+                                if (dataField === '인원') {
+                                    return p.value >= 20 ? formatNum(p.value) : '';
+                                } else {
+                                    return p.value >= 10000000 ? formatCompactWon(p.value) : '';
+                                }
+                            }
+                        },
+                        data: partners.map(p => {
+                            const match = prevArray.find(d => d.협력사 === p && d.지역 === r);
+                            return match ? match[dataField] : 0;
+                        })
                     });
+
+                    // 당월 데이터 스택 (선명하고 또렷한 톤)
                     series.push({
-                        name: r, stack: currentMonthDef, type: 'bar',
-                        itemStyle: { color, opacity: 1 },
-                        label: { show: true, position: 'inside', color: '#fff', fontSize: 13, fontWeight: 'bold', formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
-                        data: partners.map(p => { const match = currArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
+                        name: `${r} (${currentMonthDef})`,
+                        stack: currentMonthDef,
+                        type: 'bar',
+                        barMaxWidth: 38,
+                        itemStyle: {
+                            color: color,
+                            opacity: 1,
+                            borderRadius: [3, 3, 0, 0]
+                        },
+                        label: {
+                            show: true,
+                            position: 'inside',
+                            color: '#ffffff',
+                            fontSize: 11,
+                            fontWeight: 'bold',
+                            textShadowColor: 'rgba(0, 0, 0, 0.4)',
+                            textShadowBlur: 2,
+                            formatter: p => {
+                                if (!p.value || p.value <= 0) return '';
+                                if (dataField === '인원') {
+                                    return p.value >= 20 ? formatNum(p.value) : '';
+                                } else {
+                                    return p.value >= 10000000 ? formatCompactWon(p.value) : '';
+                                }
+                            }
+                        },
+                        data: partners.map(p => {
+                            const match = currArray.find(d => d.협력사 === p && d.지역 === r);
+                            return match ? match[dataField] : 0;
+                        })
                     });
                 });
+
                 return series;
             };
 
             const setStackedChart = (chartInstance, field) => {
+                const needsZoom = partners.length > 6;
+                const unit = (field === '인원') ? '명' : '원';
+
                 chartInstance.setOption({
                     tooltip: {
-                        trigger: 'axis', axisPointer: { type: 'shadow' },
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                        borderColor: '#cbd5e1',
+                        borderWidth: 1,
+                        padding: [12, 16],
+                        textStyle: { color: '#1e293b', fontSize: 12 },
+                        extraCssText: 'box-shadow: 0 10px 25px rgba(0,0,0,0.12); border-radius: 12px; min-width: 240px;',
                         formatter: function (params) {
-                            if (!params.length) return '';
-                            const axisValue = params[0].axisValue;
-                            let prevTotal = 0; let currTotal = 0;
+                            if (!params || !params.length) return '';
+                            const partnerName = params[0].axisValue;
+                            let prevTotal = 0;
+                            let currTotal = 0;
+                            const regionBreakdown = {};
+
                             params.forEach(p => {
-                                if (p.value > 0) { if (p.seriesIndex % 2 === 0) prevTotal += p.value; else currTotal += p.value; }
+                                if (p.value > 0) {
+                                    const isPrev = p.seriesName.includes(`(${prevLegend})`);
+                                    const isCurr = p.seriesName.includes(`(${currentMonthDef})`);
+                                    const regName = p.seriesName.split(' (')[0];
+
+                                    if (!regionBreakdown[regName]) regionBreakdown[regName] = { prev: 0, curr: 0, color: p.color };
+                                    if (isPrev) {
+                                        prevTotal += p.value;
+                                        regionBreakdown[regName].prev += p.value;
+                                    } else if (isCurr) {
+                                        currTotal += p.value;
+                                        regionBreakdown[regName].curr += p.value;
+                                    }
+                                }
                             });
-                            return `<strong>[${axisValue}]</strong><br/>▷ ${prevLegend}: ${formatNum(prevTotal)}<br/>▶ ${currentMonthDef}: ${formatNum(currTotal)}`;
+
+                            const diff = currTotal - prevTotal;
+                            const rate = prevTotal > 0 ? ((diff / prevTotal) * 100).toFixed(1) + '%' : (currTotal > 0 ? '신규' : '0%');
+                            const diffColor = diff > 0 ? '#16a34a' : (diff < 0 ? '#dc2626' : '#64748b');
+                            const diffSign = diff > 0 ? '+' : '';
+
+                            let html = `<div style="font-weight:800; font-size:14px; margin-bottom:8px; color:#0f172a; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px;">🏢 ${partnerName}</div>`;
+                            html += `<div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:4px; font-size:12px;">
+                                <span style="color:#64748b;">${prevLegend} (이전):</span>
+                                <strong style="color:#475569;">${formatNum(prevTotal)} ${unit}</strong>
+                            </div>`;
+                            html += `<div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:6px; font-size:12px;">
+                                <span style="color:${field === '인원' ? '#2563eb' : '#6366f1'}; font-weight:700;">${currentMonthDef} (당월):</span>
+                                <strong style="color:#0f172a;">${formatNum(currTotal)} ${unit}</strong>
+                            </div>`;
+                            html += `<div style="display:flex; justify-content:space-between; gap:16px; padding:4px 0 6px 0; border-top:1px dashed #e2e8f0; border-bottom:1px dashed #e2e8f0; font-size:12px;">
+                                <span style="color:#64748b;">증감:</span>
+                                <strong style="color:${diffColor};">${diffSign}${formatNum(diff)} ${unit} (${diffSign}${rate})</strong>
+                            </div>`;
+
+                            const rKeys = Object.keys(regionBreakdown);
+                            if (rKeys.length > 0) {
+                                html += `<div style="margin-top:8px; font-size:11px;">`;
+                                html += `<div style="font-weight:700; color:#64748b; margin-bottom:4px;">[지역별 내역]</div>`;
+                                rKeys.forEach(r => {
+                                    const info = regionBreakdown[r];
+                                    html += `<div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:3px; color:#334155;">
+                                        <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${info.color}; margin-right:4px;"></span>${r}:</span>
+                                        <span>이전 ${formatNum(info.prev)} → <strong>당월 ${formatNum(info.curr)} ${unit}</strong></span>
+                                    </div>`;
+                                });
+                                html += `</div>`;
+                            }
+
+                            return html;
                         }
                     },
-                    legend: { show: false },
-                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-                    xAxis: { type: 'category', data: partners, axisLabel: { color: colors.textMuted, interval: 0 } },
-                    yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } } },
+                    legend: {
+                        show: true,
+                        top: 0,
+                        right: 12,
+                        data: [`${prevLegend} (이전)`, `${currentMonthDef} (당월)`],
+                        textStyle: { color: '#475569', fontSize: 12, fontWeight: 600 }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        top: '50px',
+                        bottom: needsZoom ? '70px' : '45px',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: partners,
+                        axisLabel: {
+                            color: '#1e293b',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            interval: 0,
+                            rotate: partners.some(p => p.length > 5) ? 20 : 0,
+                            margin: 12
+                        },
+                        axisLine: { lineStyle: { color: '#cbd5e1' } }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            color: '#64748b',
+                            fontSize: 11,
+                            formatter: val => field === '지상비' ? formatCompactWon(val) : formatNum(val)
+                        },
+                        splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } }
+                    },
+                    dataZoom: needsZoom ? [
+                        {
+                            type: 'slider',
+                            show: true,
+                            xAxisIndex: [0],
+                            bottom: 8,
+                            height: 24,
+                            startValue: 0,
+                            endValue: Math.min(partners.length - 1, 5),
+                            fillerColor: field === '인원' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                            borderColor: '#cbd5e1',
+                            handleStyle: { color: field === '인원' ? '#2563eb' : '#6366f1' },
+                            textStyle: { color: '#64748b', fontSize: 11, fontWeight: 600 },
+                            brushSelect: false,
+                            showDetail: true
+                        },
+                        {
+                            type: 'inside',
+                            xAxisIndex: [0],
+                            zoomOnMouseWheel: false,
+                            moveOnMouseMove: true,
+                            moveOnMouseWheel: true
+                        }
+                    ] : [],
                     series: getSeries(field)
                 }, true);
             };
