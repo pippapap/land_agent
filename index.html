@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,247 +8,610 @@
     <!-- 폰트: Noto Sans KR (Google Fonts) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- ECharts CDN -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <style>
-:root {
-    --bg-color-main: #f8fafc;
-    --bg-color-glass: rgba(255, 255, 255, 0.75);
-    --bg-color-glass-hover: rgba(255, 255, 255, 1);
-    --border-glass: rgba(0, 0, 0, 0.08); /* light border */
-    --text-primary: #1e293b;
-    --text-secondary: #475569;
-    
-    /* 강조색: 파란색-남색 계열 */
-    --accent-blue: #2563eb; 
-    --accent-navy: #1e3a8a;
-    --accent-green: #059669;
-    --accent-red: #dc2626; 
-    --accent-purple: #4f46e5;
-    
-    --font-family: 'Noto Sans KR', sans-serif;
-    --sidebar-width: 250px;
-}
+        :root {
+            --bg-color-main: #f8fafc;
+            --bg-color-glass: rgba(255, 255, 255, 0.75);
+            --bg-color-glass-hover: rgba(255, 255, 255, 1);
+            --border-glass: rgba(0, 0, 0, 0.08);
+            /* light border */
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+            /* 강조색: 파란색-남색 계열 */
+            --accent-blue: #2563eb;
+            --accent-navy: #1e3a8a;
+            --accent-green: #059669;
+            --accent-red: #dc2626;
+            --accent-purple: #4f46e5;
 
-body {
-    background-color: var(--bg-color-main);
-    color: var(--text-primary);
-    font-family: var(--font-family);
-    min-height: 100vh;
-    background-image: 
-        radial-gradient(circle at 10% 50%, rgba(37, 99, 235, 0.05), transparent 30%),
-        radial-gradient(circle at 90% 80%, rgba(30, 58, 138, 0.05), transparent 30%);
-    background-attachment: fixed;
-    line-height: 1.6;
-    overflow-x: hidden;
-}
+            --font-family: 'Noto Sans KR', sans-serif;
+            --sidebar-width: 250px;
+        }
 
-.glass-panel {
-    background: var(--bg-color-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border-glass);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* very soft shadow */
-}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-/* Layout */
-.app-layout { display: flex; min-height: 100vh; }
+        body {
+            background-color: var(--bg-color-main);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 10% 50%, rgba(37, 99, 235, 0.05), transparent 30%),
+                radial-gradient(circle at 90% 80%, rgba(30, 58, 138, 0.05), transparent 30%);
+            background-attachment: fixed;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
-.sidebar {
-    width: var(--sidebar-width);
-    display: flex;
-    flex-direction: column;
-    border-radius: 0;
-    border-right: 1px solid var(--border-glass);
-    border-top: none; border-bottom: none; border-left: none;
-    position: fixed;
-    height: 100vh;
-    overflow-y: auto;
-    z-index: 50;
-    padding: 24px 0;
-    background: #ffffff;
-}
-.brand { padding: 0 24px 32px; }
-.brand h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.03em; color: var(--accent-navy); }
-.nav-title {
-    font-size: 0.8rem; color: var(--text-secondary);
-    text-transform: uppercase; letter-spacing: 0.05em;
-    padding: 0 24px 12px; font-weight: 700;
-}
-.nav-list { list-style: none; display: flex; flex-direction: column; }
-.nav-item {
-    padding: 12px 24px; cursor: pointer; font-size: 0.95rem;
-    color: var(--text-secondary); transition: all 0.2s;
-    border-left: 3px solid transparent; display: flex; align-items: center;
-    font-weight: 500;
-}
-.nav-item:hover { background: rgba(0, 0, 0, 0.03); color: var(--text-primary); }
-.nav-item.active {
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), transparent);
-    color: var(--accent-navy); border-left-color: var(--accent-blue); font-weight: 700;
-}
-.nav-item[data-team="all"] {
-    position: relative;
-    margin-bottom: 12px;
-}
-.nav-item[data-team="all"]::after {
-    content: ''; position: absolute; bottom: -6px; left: 24px; right: 24px;
-    height: 1px; background-color: var(--border-glass);
-}
+        .glass-panel {
+            background: var(--bg-color-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            /* very soft shadow */
+        }
 
-/* Section Headers (outside panels) */
-.section-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 8px; padding: 0 4px;
-}
-.section-label {
-    font-size: 1.2rem; font-weight: 700; color: var(--text-primary);
-    letter-spacing: -0.02em;
-}
-.section-toggles { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px; }
+        /* Layout */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
 
-.main-content {
-    flex: 1; margin-left: var(--sidebar-width);
-    padding: 24px 40px; display: flex; flex-direction: column; gap: 24px;
-}
+        .sidebar {
+            width: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            border-radius: 0;
+            border-right: 1px solid var(--border-glass);
+            border-top: none;
+            border-bottom: none;
+            border-left: none;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            padding: 24px 0;
+            background: #ffffff;
+        }
 
-.topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 24px; border-radius: 12px;
-}
-.topbar-left h2 {
-    font-size: 1.35rem; font-weight: 750;
-    margin: 0; padding: 0; color: var(--text-primary);
-}
+        .brand {
+            padding: 0 24px 32px;
+        }
 
-.filter-controls select {
-    background: #ffffff; color: var(--text-primary);
-    border: 1px solid #e2e8f0; padding: 8px 16px;
-    border-radius: 8px; font-size: 0.95rem; outline: none; cursor: pointer;
-    font-weight: 600;
-}
-.filter-controls select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
+        .brand h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--accent-navy);
+        }
 
-/* Compare Toggles */
-.chart-header-row {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-}
-.chart-header-row .section-title { margin-bottom: 0; }
-.compare-toggles { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px; }
-.toggle-btn {
-    background: transparent; color: var(--text-secondary); border: none;
-    padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
-    cursor: pointer; transition: all 0.2s;
-}
-.toggle-btn.active { background: white; color: var(--accent-navy); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .nav-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0 24px 12px;
+            font-weight: 700;
+        }
 
-/* KPIs */
-.kpi-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-.kpi-card {
-    padding: 24px; border-radius: 16px;
-    display: flex; flex-direction: column; justify-content: center;
-    transition: transform 0.2s;
-}
-.kpi-card:hover { transform: translateY(-4px); background: var(--bg-color-glass-hover); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
-.kpi-card h3 { font-size: 0.95rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 12px; }
-.kpi-value {
-    font-size: 1.5rem; font-weight: 700; color: var(--text-secondary);
-    display: flex; align-items: baseline; gap: 4px; margin-bottom: 8px;
-}
-.kpi-value span { font-size: 2.2rem; color: var(--accent-navy); }
-.kpi-highlight .kpi-value { color: var(--accent-purple); font-size: 1.6rem; }
-.kpi-highlight .kpi-value span { font-size: 2rem; color: var(--accent-purple); }
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+        }
 
-.kpi-trend { font-size: 0.85rem; display: flex; align-items: center; gap: 4px; font-weight: 600; }
-.kpi-trend .muted { color: var(--text-secondary); }
-.trend-up { color: var(--accent-green); }
-.trend-down { color: var(--accent-red); }
-.trend-neutral { color: var(--text-secondary); }
+        .nav-item {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
 
-/* Charts */
-.chart-section { display: grid; grid-template-columns: 1fr; gap: 24px; }
-.chart-container { padding: 24px; border-radius: 16px; display: flex; flex-direction: column; }
-.section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); font-style: normal; }
-.chart { width: 100%; height: 380px; }
+        .nav-item:hover {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--text-primary);
+        }
 
-/* Table */
-.table-section { padding: 24px; border-radius: 16px; display: flex; flex-direction: column; }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), transparent);
+            color: var(--accent-navy);
+            border-left-color: var(--accent-blue);
+            font-weight: 700;
+        }
 
-/* Table View Toggles */
-.table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.table-header-left { display: flex; align-items: center; gap: 16px; }
-.table-header-left .section-title { margin-bottom: 0; }
-.table-view-toggles { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px; }
-.view-btn {
-    background: transparent; color: var(--text-secondary); border: none;
-    padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
-    cursor: pointer; transition: all 0.2s;
-}
-.view-btn.active { background: white; color: var(--accent-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .nav-item[data-team="all"] {
+            position: relative;
+            margin-bottom: 12px;
+        }
 
-.table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-glass); background: white; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; text-align: left; }
-th { background: #f8fafc; color: var(--text-secondary); font-weight: 800; font-size: 0.9rem; border-bottom: 2px solid #e2e8f0; user-select: none; }
-td { font-size: 0.95rem; font-weight: 500; }
-tr:hover td { background: #f8fafc; }
-.text-right { text-align: right; }
+        .nav-item[data-team="all"]::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 24px;
+            right: 24px;
+            height: 1px;
+            background-color: var(--border-glass);
+        }
 
-.group-header-row td {
-    background-color: #f8fafc; font-weight: 700; color: var(--accent-navy);
-    border-bottom: 2px solid #cbd5e1; font-size: 1rem;
-}
+        /* Section Headers (outside panels) */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 0 4px;
+        }
 
-.sort-btn {
-    cursor: pointer; transition: color 0.2s;
-    display: inline-flex; align-items: center; gap: 4px;
-}
-.sort-btn:hover { color: var(--accent-navy); }
-.sort-icon { font-size: 0.75rem; opacity: 0.5; }
-.sort-icon.active-asc { opacity: 1; color: var(--accent-blue); content: '▲'; }
-.sort-icon.active-desc { opacity: 1; color: var(--accent-blue); content: '▼'; }
+        .section-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
-::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        .section-toggles {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+        }
 
-/* Password Overlay */
-.password-overlay {
-    position: fixed; inset: 0; z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 60%, #dbeafe 100%);
-    padding: 20px;
-}
-.password-box {
-    width: 100%; max-width: 420px; padding: 40px 32px; border-radius: 20px;
-    display: flex; flex-direction: column; align-items: stretch; gap: 14px;
-    text-align: center;
-}
-.password-logo { font-size: 2.2rem; margin-bottom: 2px; }
-.password-box h2 { font-size: 1.35rem; font-weight: 800; color: var(--accent-navy); margin: 0; }
-.password-desc { font-size: 0.95rem; color: var(--text-primary); margin: 0; word-break: keep-all; font-weight: 500; }
-.password-contact { font-size: 0.85rem; color: #64748b; margin: 0; }
-.password-form { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 6px; }
-.password-form input {
-    width: 100%; padding: 13px 16px; border: 1.5px solid #cbd5e1;
-    border-radius: 10px; font-size: 1rem; font-family: inherit;
-    outline: none; transition: all 0.2s; background: #ffffff;
-}
-.password-form input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-.password-form button {
-    width: 100%; padding: 13px 0; border: none; border-radius: 10px; cursor: pointer;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-navy));
-    color: white; font-size: 1.05rem; font-weight: 700; font-family: inherit;
-    transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.25);
-}
-.password-form button:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,0.35); }
-.password-form button:active { transform: translateY(0); }
-.password-error { font-size: 0.88rem; color: var(--accent-red); font-weight: 600; min-height: 20px; margin-top: -4px; }
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 24px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-radius: 12px;
+        }
+
+        .topbar-left h2 {
+            font-size: 1.35rem;
+            font-weight: 750;
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .filter-controls select {
+            background: #ffffff;
+            color: var(--text-primary);
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .filter-controls select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        /* Compare Toggles */
+        .chart-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-header-row .section-title {
+            margin-bottom: 0;
+        }
+
+        .compare-toggles {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: white;
+            color: var(--accent-navy);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* KPIs */
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .kpi-card {
+            padding: 24px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            background: var(--bg-color-glass-hover);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .kpi-card h3 {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value span {
+            font-size: 2.2rem;
+            color: var(--accent-navy);
+        }
+
+        .kpi-highlight .kpi-value {
+            color: var(--accent-purple);
+            font-size: 1.6rem;
+        }
+
+        .kpi-highlight .kpi-value span {
+            font-size: 2rem;
+            color: var(--accent-purple);
+        }
+
+        .kpi-trend {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+        .kpi-trend .muted {
+            color: var(--text-secondary);
+        }
+
+        .trend-up {
+            color: var(--accent-green);
+        }
+
+        .trend-down {
+            color: var(--accent-red);
+        }
+
+        .trend-neutral {
+            color: var(--text-secondary);
+        }
+
+        /* Charts */
+        .chart-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        .chart-container {
+            padding: 24px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            font-style: normal;
+        }
+
+        .chart {
+            width: 100%;
+            height: 380px;
+        }
+
+        /* Table */
+        .table-section {
+            padding: 24px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Table View Toggles */
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .table-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .table-header-left .section-title {
+            margin-bottom: 0;
+        }
+
+        .table-view-toggles {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .view-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: white;
+            color: var(--accent-blue);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-glass);
+            background: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: left;
+        }
+
+        th {
+            background: #f8fafc;
+            color: var(--text-secondary);
+            font-weight: 800;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #e2e8f0;
+            user-select: none;
+        }
+
+        td {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .group-header-row td {
+            background-color: #f8fafc;
+            font-weight: 700;
+            color: var(--accent-navy);
+            border-bottom: 2px solid #cbd5e1;
+            font-size: 1rem;
+        }
+
+        .sort-btn {
+            cursor: pointer;
+            transition: color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sort-btn:hover {
+            color: var(--accent-navy);
+        }
+
+        .sort-icon {
+            font-size: 0.75rem;
+            opacity: 0.5;
+        }
+
+        .sort-icon.active-asc {
+            opacity: 1;
+            color: var(--accent-blue);
+            content: '▲';
+        }
+
+        .sort-icon.active-desc {
+            opacity: 1;
+            color: var(--accent-blue);
+            content: '▼';
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        /* Password Overlay */
+        .password-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 60%, #dbeafe 100%);
+            padding: 20px;
+        }
+
+        .password-box {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px 32px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 14px;
+            text-align: center;
+        }
+
+        .password-logo {
+            font-size: 2.2rem;
+            margin-bottom: 2px;
+        }
+
+        .password-box h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--accent-navy);
+            margin: 0;
+        }
+
+        .password-desc {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin: 0;
+            word-break: keep-all;
+            font-weight: 500;
+        }
+
+        .password-contact {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .password-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin-top: 6px;
+        }
+
+        .password-form input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+            background: #ffffff;
+        }
+
+        .password-form input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .password-form button {
+            width: 100%;
+            padding: 13px 0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-navy));
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-family: inherit;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        .password-form button:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+
+        .password-form button:active {
+            transform: translateY(0);
+        }
+
+        .password-error {
+            font-size: 0.88rem;
+            color: var(--accent-red);
+            font-weight: 600;
+            min-height: 20px;
+            margin-top: -4px;
+        }
     </style>
 </head>
+
 <body>
     <!-- 암호 입력 오버레이 -->
     <div id="passwordOverlay" class="password-overlay">
@@ -255,7 +619,6 @@ tr:hover td { background: #f8fafc; }
             <div class="password-logo">🔒</div>
             <h2>협력사 수배현황 대시보드</h2>
             <p class="password-desc">대시보드 접속을 위해 비밀번호를 입력해주세요.</p>
-            <p class="password-contact">* 관련 문의: 기획팀 김건희 계장(4663)</p>
             <div class="password-form">
                 <input type="password" id="passwordInput" placeholder="비밀번호를 입력하세요" autocomplete="off">
                 <button id="passwordSubmit" type="button">확인</button>
@@ -341,7 +704,7 @@ tr:hover td { background: #f8fafc; }
                     </div>
                     <div id="chart1" class="chart"></div>
                 </div>
-                
+
                 <!-- 동적 차트 2 -->
                 <div class="chart-container glass-panel chart-full">
                     <div class="chart-header-row">
@@ -383,434 +746,400 @@ tr:hover td { background: #f8fafc; }
 
     <!-- 암호 인증 및 애플리케이션 스크립트 통합 -->
     <script>
-    (function () {
-        const CORRECT = 'vgt123**'; // 비밀번호
-        const overlay = document.getElementById('passwordOverlay');
-        const app = document.getElementById('appLayout');
-        const input = document.getElementById('passwordInput');
-        const btn = document.getElementById('passwordSubmit');
-        const errMsg = document.getElementById('passwordError');
+        (function () {
+            const CORRECT = 'vgt123**'; // 비밀번호
+            const overlay = document.getElementById('passwordOverlay');
+            const app = document.getElementById('appLayout');
+            const input = document.getElementById('passwordInput');
+            const btn = document.getElementById('passwordSubmit');
+            const errMsg = document.getElementById('passwordError');
 
-        if (sessionStorage.getItem('auth') === '1') {
-            overlay.style.display = 'none';
-            app.style.display = 'flex';
-        }
-
-        function tryLogin() {
-            if (input.value === CORRECT) {
-                sessionStorage.setItem('auth', '1');
+            if (sessionStorage.getItem('auth') === '1') {
                 overlay.style.display = 'none';
                 app.style.display = 'flex';
-                errMsg.textContent = '';
-            } else {
-                errMsg.textContent = '⚠️ 비밀번호가 다릅니다.';
-                input.value = '';
-                input.focus();
             }
-        }
 
-        btn.addEventListener('click', tryLogin);
-        input.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
-    })();
-
-    // === 전역 데이터 관리 ===
-    let rawData = [];
-    let selectedTeam = 'all'; 
-    let currentMonthDef = '';
-    let charts = {};
-
-    let chartCompareType = 'mom'; // 'mom' | 'yoy'
-    let tableViewMode = 'list'; // 'list' | 'group'
-
-    let sortCol = '';
-    let sortDesc = false;
-
-    // 팀 고정 순서 (정렬 기준)
-    const TEAM_ORDER = [
-        "동남아1팀", "동남아2팀", "동남아3팀", "일본팀", "중국팀",
-        "서유럽팀", "스페인/북유럽팀", "동유럽팀", "지중해/인도/아프리카팀",
-        "프리미엄팀", "미주팀", "남태평양팀", "부산지점", "대구지점", "크루즈/테마팀"
-    ];
-
-    // 테마 색상 팔레트
-    const colors = {
-        primary: '#1d4ed8', cyan: '#2563eb', purple: '#4f46e5',
-        green: '#059669', orange: '#ea580c', red: '#dc2626',
-        text: '#1e293b', textMuted: '#64748b'
-    };
-
-    // === 데이터 전처리 (팀 병합) ===
-    function preprocessData() {
-        rawData.forEach(d => {
-            if (d.팀 === '태국파트' || d.팀 === '필리핀/말레이시아파트') {
-                d.팀 = '동남아3팀';
-            }
-        });
-    }
-
-    async function fetchJsonSafe(url) {
-        try {
-            const res = await fetch(url);
-            if (res.ok) return await res.json();
-        } catch (e) { }
-        return null;
-    }
-
-    async function loadData() {
-        try {
-            // 1. 매니페스트 파일 로드 (./data/index.json 또는 ./index.json 시도)
-            let manifest = await fetchJsonSafe('./data/index.json');
-            if (!manifest) manifest = await fetchJsonSafe('./index.json');
-
-            rawData = [];
-
-            if (manifest && Array.isArray(manifest)) {
-                // 2. 각 파일 순서대로 fetch
-                for (const entry of manifest) {
-                    let fileData = await fetchJsonSafe(`./data/${entry.file}`);
-                    if (!fileData) fileData = await fetchJsonSafe(`./${entry.file}`);
-                    if (fileData && Array.isArray(fileData)) {
-                        fileData.forEach(d => { d.월 = entry.label; });
-                        rawData = rawData.concat(fileData);
-                    }
+            function tryLogin() {
+                if (input.value === CORRECT) {
+                    sessionStorage.setItem('auth', '1');
+                    overlay.style.display = 'none';
+                    app.style.display = 'flex';
+                    errMsg.textContent = '';
+                } else {
+                    errMsg.textContent = '⚠️ 비밀번호가 다릅니다.';
+                    input.value = '';
+                    input.focus();
                 }
             }
 
-            if (rawData.length === 0) throw new Error('데이터 로드 실패');
+            btn.addEventListener('click', tryLogin);
+            input.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+        })();
 
-            preprocessData();
-            extractMonthsAndInit();
-            initSidebar();
-            initCharts();
-            setupEventListeners();
+        // === 전역 데이터 관리 ===
+        let rawData = [];
+        let selectedTeam = 'all';
+        let currentMonthDef = '';
+        let charts = {};
+
+        let chartCompareType = 'mom'; // 'mom' | 'yoy'
+        let tableViewMode = 'list'; // 'list' | 'group'
+
+        let sortCol = '';
+        let sortDesc = false;
+
+        // 팀 고정 순서 (정렬 기준)
+        const TEAM_ORDER = [
+            "동남아1팀", "동남아2팀", "동남아3팀", "일본팀", "중국팀",
+            "서유럽팀", "스페인/북유럽팀", "동유럽팀", "지중해/인도/아프리카팀",
+            "프리미엄팀", "미주팀", "남태평양팀", "부산지점", "대구지점", "크루즈/테마팀"
+        ];
+
+        // 테마 색상 팔레트
+        const colors = {
+            primary: '#1d4ed8', cyan: '#2563eb', purple: '#4f46e5',
+            green: '#059669', orange: '#ea580c', red: '#dc2626',
+            text: '#1e293b', textMuted: '#64748b'
+        };
+
+        // === 데이터 전처리 (팀 병합) ===
+        function preprocessData() {
+            rawData.forEach(d => {
+                if (d.팀 === '태국파트' || d.팀 === '필리핀/말레이시아파트') {
+                    d.팀 = '동남아3팀';
+                }
+            });
+        }
+
+        async function fetchJsonSafe(url) {
+            try {
+                const res = await fetch(url);
+                if (res.ok) return await res.json();
+            } catch (e) { }
+            return null;
+        }
+
+        async function loadData() {
+            try {
+                // 1. 매니페스트 파일 로드 (./data/index.json 또는 ./index.json 시도)
+                let manifest = await fetchJsonSafe('./data/index.json');
+                if (!manifest) manifest = await fetchJsonSafe('./index.json');
+
+                rawData = [];
+
+                if (manifest && Array.isArray(manifest)) {
+                    // 2. 각 파일 순서대로 fetch
+                    for (const entry of manifest) {
+                        let fileData = await fetchJsonSafe(`./data/${entry.file}`);
+                        if (!fileData) fileData = await fetchJsonSafe(`./${entry.file}`);
+                        if (fileData && Array.isArray(fileData)) {
+                            fileData.forEach(d => { d.월 = entry.label; });
+                            rawData = rawData.concat(fileData);
+                        }
+                    }
+                }
+
+                if (rawData.length === 0) throw new Error('데이터 로드 실패');
+
+                preprocessData();
+                extractMonthsAndInit();
+                initSidebar();
+                initCharts();
+                setupEventListeners();
+                applyFilter();
+
+            } catch (err) {
+                console.error('데이터 로드 실패:', err);
+                document.getElementById('currentTeamTitle').innerText = '⚠️ 데이터 로드 실패 — 로컬 서버 또는 GitHub Pages에서 확인해주세요.';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        // === 월 드롭다운 세팅 ===
+        function extractMonthsAndInit() {
+            const monthSelect = document.getElementById('monthSelect');
+            const months = [...new Set(rawData.map(d => d.월))].sort();
+
+            monthSelect.innerHTML = '';
+            months.forEach(m => {
+                monthSelect.innerHTML += `<option value="${m}">${m}</option>`;
+            });
+
+            if (months.length > 0) {
+                currentMonthDef = months[months.length - 1];
+                monthSelect.value = currentMonthDef;
+            }
+        }
+
+        // === 비교 월 계산 (MoM 또는 YoY) ===
+        function getComparisonMonth(baseMonth, type) {
+            if (!baseMonth || !baseMonth.includes('-')) return null;
+            const [y, m] = baseMonth.split('-').map(Number);
+            if (type === 'mom') {
+                let py = y, pm = m - 1;
+                if (pm === 0) { pm = 12; py -= 1; }
+                return `${py}-${pm.toString().padStart(2, '0')}`;
+            } else if (type === 'yoy') {
+                return `${y - 1}-${m.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // === 사이드바 동적 생성 ===
+        function initSidebar() {
+            const teamNav = document.getElementById('teamNav');
+            Array.from(teamNav.querySelectorAll('.nav-item:not([data-team="all"])')).forEach(el => el.remove());
+
+            teamNav.querySelector('[data-team="all"]').addEventListener('click', (e) => changeTeam('all', e.currentTarget));
+
+            TEAM_ORDER.forEach(t => {
+                const li = document.createElement('li');
+                li.className = 'nav-item'; li.dataset.team = t; li.innerHTML = `<span>${t}</span>`;
+                li.addEventListener('click', (e) => changeTeam(t, e.currentTarget));
+                teamNav.appendChild(li);
+            });
+        }
+
+        function changeTeam(tName, el) {
+            selectedTeam = tName;
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('currentTeamTitle').innerText = (tName === 'all') ? '전체' : tName;
             applyFilter();
-
-        } catch (err) {
-            console.error('데이터 로드 실패:', err);
-            document.getElementById('currentTeamTitle').innerText = '⚠️ 데이터 로드 실패 — 로컬 서버 또는 GitHub Pages에서 확인해주세요.';
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', loadData);
-
-    // === 월 드롭다운 세팅 ===
-    function extractMonthsAndInit() {
-        const monthSelect = document.getElementById('monthSelect');
-        const months = [...new Set(rawData.map(d => d.월))].sort();
-        
-        monthSelect.innerHTML = '';
-        months.forEach(m => {
-            monthSelect.innerHTML += `<option value="${m}">${m}</option>`;
-        });
-        
-        if (months.length > 0) {
-            currentMonthDef = months[months.length - 1];
-            monthSelect.value = currentMonthDef;
-        }
-    }
-
-    // === 비교 월 계산 (MoM 또는 YoY) ===
-    function getComparisonMonth(baseMonth, type) {
-        if (!baseMonth || !baseMonth.includes('-')) return null;
-        const [y, m] = baseMonth.split('-').map(Number);
-        if (type === 'mom') {
-            let py = y, pm = m - 1;
-            if (pm === 0) { pm = 12; py -= 1; }
-            return `${py}-${pm.toString().padStart(2, '0')}`;
-        } else if (type === 'yoy') {
-            return `${y - 1}-${m.toString().padStart(2, '0')}`;
-        }
-    }
-
-    // === 사이드바 동적 생성 ===
-    function initSidebar() {
-        const teamNav = document.getElementById('teamNav');
-        Array.from(teamNav.querySelectorAll('.nav-item:not([data-team="all"])')).forEach(el => el.remove());
-
-        teamNav.querySelector('[data-team="all"]').addEventListener('click', (e) => changeTeam('all', e.currentTarget));
-
-        TEAM_ORDER.forEach(t => {
-            const li = document.createElement('li');
-            li.className = 'nav-item'; li.dataset.team = t; li.innerHTML = `<span>${t}</span>`;
-            li.addEventListener('click', (e) => changeTeam(t, e.currentTarget));
-            teamNav.appendChild(li);
-        });
-    }
-
-    function changeTeam(tName, el) {
-        selectedTeam = tName;
-        document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-        el.classList.add('active');
-        document.getElementById('currentTeamTitle').innerText = (tName === 'all') ? '전체' : tName;
-        applyFilter();
-    }
-
-    function setupEventListeners() {
-        document.getElementById('monthSelect').addEventListener('change', (e) => {
-            currentMonthDef = e.target.value;
-            applyFilter();
-        });
-
-        window.addEventListener('resize', () => { Object.values(charts).forEach(c => c.resize()); });
-
-        document.querySelectorAll('#globalCompareToggles .toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                chartCompareType = e.target.dataset.type;
-                document.querySelectorAll('#globalCompareToggles .toggle-btn').forEach(b => {
-                    b.classList.toggle('active', b.dataset.type === chartCompareType);
-                });
+        function setupEventListeners() {
+            document.getElementById('monthSelect').addEventListener('change', (e) => {
+                currentMonthDef = e.target.value;
                 applyFilter();
             });
-        });
 
-        document.getElementById('viewModeList').addEventListener('click', () => {
-            tableViewMode = 'list';
-            document.getElementById('viewModeList').classList.add('active');
-            document.getElementById('viewModeGroup').classList.remove('active');
-            applyFilter();
-        });
-        document.getElementById('viewModeGroup').addEventListener('click', () => {
-            tableViewMode = 'group';
-            document.getElementById('viewModeGroup').classList.add('active');
-            document.getElementById('viewModeList').classList.remove('active');
-            applyFilter();
-        });
-    }
+            window.addEventListener('resize', () => { Object.values(charts).forEach(c => c.resize()); });
 
-    const formatNum = (num) => new Intl.NumberFormat('ko-KR').format(num);
+            document.querySelectorAll('#globalCompareToggles .toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    chartCompareType = e.target.dataset.type;
+                    document.querySelectorAll('#globalCompareToggles .toggle-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.type === chartCompareType);
+                    });
+                    applyFilter();
+                });
+            });
 
-    function getTrendHTML(curr, prev) {
-        if (!prev || prev === 0) return `<span class="trend-neutral">- 신규 (비교 없음)</span>`;
-        const diff = curr - prev;
-        const rate = ((diff / prev) * 100).toFixed(1);
-        if (diff > 0) return `<span class="trend-up">▲ ${formatNum(diff)} (+${rate}%)</span>`;
-        if (diff < 0) return `<span class="trend-down">▼ ${formatNum(Math.abs(diff))} (${rate}%)</span>`;
-        return `<span class="trend-neutral">- 변동 없음 (0%)</span>`;
-    }
-
-    function applyFilter() {
-        const chartCompare = getComparisonMonth(currentMonthDef, chartCompareType);
-        const kpiPrevMonth = getComparisonMonth(currentMonthDef, 'mom');
-
-        const baseCurr = rawData.filter(d => d.월 === currentMonthDef);
-        const baseChartPrev = rawData.filter(d => d.월 === chartCompare);
-        const baseKpiPrev = rawData.filter(d => d.월 === kpiPrevMonth);
-
-        const currTarget = (selectedTeam === 'all') ? baseCurr : baseCurr.filter(d => d.팀 === selectedTeam);
-        const chartPrevTarget = (selectedTeam === 'all') ? baseChartPrev : baseChartPrev.filter(d => d.팀 === selectedTeam);
-        const kpiPrevTarget = (selectedTeam === 'all') ? baseKpiPrev : baseKpiPrev.filter(d => d.팀 === selectedTeam);
-
-        const sumP_curr = currTarget.reduce((s, d) => s + (d.인원 || 0), 0);
-        const sumC_curr = currTarget.reduce((s, d) => s + (d.지상비 || 0), 0);
-        const sumP_prev = kpiPrevTarget.reduce((s, d) => s + (d.인원 || 0), 0);
-        const sumC_prev = kpiPrevTarget.reduce((s, d) => s + (d.지상비 || 0), 0);
-
-        document.getElementById('kpiPersonnelCurrent').innerText = formatNum(sumP_curr);
-        document.getElementById('kpiPersonnelTrend').innerHTML = getTrendHTML(sumP_curr, sumP_prev) + ' (전월 대비)';
-        document.getElementById('kpiCostCurrent').innerText = formatNum(sumC_curr);
-        document.getElementById('kpiCostTrend').innerHTML = getTrendHTML(sumC_curr, sumC_prev) + ' (전월 대비)';
-
-        const getTop = (arr) => {
-            if (arr.length === 0) return '-';
-            const m = {}; arr.forEach(d => { m[d.협력사] = (m[d.협력사] || 0) + d.인원; });
-            return Object.entries(m).sort((a, b) => b[1] - a[1])[0][0];
-        };
-
-        document.getElementById('kpiTopPartner').innerText = getTop(currTarget);
-        document.getElementById('kpiTopPartnerPrev').innerText = `전월 최다: ${getTop(kpiPrevTarget)}`;
-
-        if (selectedTeam === 'all') {
-            updateAllCharts(currTarget, chartPrevTarget, chartCompare);
-        } else {
-            updateTeamCharts(currTarget, chartPrevTarget, chartCompare);
+            document.getElementById('viewModeList').addEventListener('click', () => {
+                tableViewMode = 'list';
+                document.getElementById('viewModeList').classList.add('active');
+                document.getElementById('viewModeGroup').classList.remove('active');
+                applyFilter();
+            });
+            document.getElementById('viewModeGroup').addEventListener('click', () => {
+                tableViewMode = 'group';
+                document.getElementById('viewModeGroup').classList.add('active');
+                document.getElementById('viewModeList').classList.remove('active');
+                applyFilter();
+            });
         }
 
-        renderTable(currTarget);
-    }
+        const formatNum = (num) => new Intl.NumberFormat('ko-KR').format(num);
 
-    function initCharts() {
-        charts.chart1 = echarts.init(document.getElementById('chart1'));
-        charts.chart2 = echarts.init(document.getElementById('chart2'));
-    }
+        function getTrendHTML(curr, prev) {
+            if (!prev || prev === 0) return `<span class="trend-neutral">- 신규 (비교 없음)</span>`;
+            const diff = curr - prev;
+            const rate = ((diff / prev) * 100).toFixed(1);
+            if (diff > 0) return `<span class="trend-up">▲ ${formatNum(diff)} (+${rate}%)</span>`;
+            if (diff < 0) return `<span class="trend-down">▼ ${formatNum(Math.abs(diff))} (${rate}%)</span>`;
+            return `<span class="trend-neutral">- 변동 없음 (0%)</span>`;
+        }
 
-    function updateAllCharts(currArray, prevArray, prevNameStr) {
-        document.getElementById('chart1Title').innerText = `팀별 송출 인원 비교`;
-        document.getElementById('chart2Title').innerText = `팀별 지상비 비교`;
+        function applyFilter() {
+            const chartCompare = getComparisonMonth(currentMonthDef, chartCompareType);
+            const kpiPrevMonth = getComparisonMonth(currentMonthDef, 'mom');
 
-        const aggregate = (dataArr) => {
-            const result = {};
-            dataArr.forEach(d => {
-                if (!result[d.팀]) result[d.팀] = { 인원: 0, 비용: 0 };
-                result[d.팀].인원 += d.인원; result[d.팀].비용 += d.지상비;
-            });
-            return result;
-        };
-        const cMap = aggregate(currArray);
-        const pMap = aggregate(prevArray);
-        const uniqueKeys = TEAM_ORDER.filter(t => cMap[t] || pMap[t]);
+            const baseCurr = rawData.filter(d => d.월 === currentMonthDef);
+            const baseChartPrev = rawData.filter(d => d.월 === chartCompare);
+            const baseKpiPrev = rawData.filter(d => d.월 === kpiPrevMonth);
 
-        const persCurrS = uniqueKeys.map(k => cMap[k]?.인원 || 0);
-        const persPrevS = uniqueKeys.map(k => pMap[k]?.인원 || 0);
-        const costCurrS = uniqueKeys.map(k => cMap[k]?.비용 || 0);
-        const costPrevS = uniqueKeys.map(k => pMap[k]?.비용 || 0);
+            const currTarget = (selectedTeam === 'all') ? baseCurr : baseCurr.filter(d => d.팀 === selectedTeam);
+            const chartPrevTarget = (selectedTeam === 'all') ? baseChartPrev : baseChartPrev.filter(d => d.팀 === selectedTeam);
+            const kpiPrevTarget = (selectedTeam === 'all') ? baseKpiPrev : baseKpiPrev.filter(d => d.팀 === selectedTeam);
 
-        const prevLegend = prevNameStr || '비교 없음';
+            const sumP_curr = currTarget.reduce((s, d) => s + (d.인원 || 0), 0);
+            const sumC_curr = currTarget.reduce((s, d) => s + (d.지상비 || 0), 0);
+            const sumP_prev = kpiPrevTarget.reduce((s, d) => s + (d.인원 || 0), 0);
+            const sumC_prev = kpiPrevTarget.reduce((s, d) => s + (d.지상비 || 0), 0);
 
-        const setGroupChart = (chartInstance, prevS, currS, currColor) => {
-            chartInstance.setOption({
-                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                legend: { data: [prevLegend, currentMonthDef], textStyle: { color: colors.text } },
-                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-                xAxis: { type: 'category', data: uniqueKeys, axisLabel: { color: colors.textMuted, interval: 0 } },
-                yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } } },
-                series: [
-                    { name: prevLegend, type: 'bar', data: prevS, itemStyle: { color: 'rgba(148, 163, 184, 0.4)' }, barGap: '10%' },
-                    { name: currentMonthDef, type: 'bar', data: currS, itemStyle: { color: currColor, borderRadius: [4, 4, 0, 0] } }
-                ]
-            }, true);
-        };
+            document.getElementById('kpiPersonnelCurrent').innerText = formatNum(sumP_curr);
+            document.getElementById('kpiPersonnelTrend').innerHTML = getTrendHTML(sumP_curr, sumP_prev) + ' (전월 대비)';
+            document.getElementById('kpiCostCurrent').innerText = formatNum(sumC_curr);
+            document.getElementById('kpiCostTrend').innerHTML = getTrendHTML(sumC_curr, sumC_prev) + ' (전월 대비)';
 
-        setGroupChart(charts.chart1, persPrevS, persCurrS, new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.cyan }, { offset: 1, color: colors.primary }]));
-        setGroupChart(charts.chart2, costPrevS, costCurrS, new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.purple }, { offset: 1, color: colors.primary }]));
-    }
+            const getTop = (arr) => {
+                if (arr.length === 0) return '-';
+                const m = {}; arr.forEach(d => { m[d.협력사] = (m[d.협력사] || 0) + d.인원; });
+                return Object.entries(m).sort((a, b) => b[1] - a[1])[0][0];
+            };
 
-    function updateTeamCharts(currArray, prevArray, prevNameStr) {
-        document.getElementById('chart1Title').innerText = `협력사/지역별 송출 인원 비교`;
-        document.getElementById('chart2Title').innerText = `협력사/지역별 지상비 비교`;
+            document.getElementById('kpiTopPartner').innerText = getTop(currTarget);
+            document.getElementById('kpiTopPartnerPrev').innerText = `전월 최다: ${getTop(kpiPrevTarget)}`;
 
-        const partners = [...new Set([...currArray, ...prevArray].map(d => d.협력사))];
-        const partnerTotal = {};
-        currArray.forEach(d => { partnerTotal[d.협력사] = (partnerTotal[d.협력사] || 0) + d.인원; });
-        partners.sort((a, b) => (partnerTotal[b] || 0) - (partnerTotal[a] || 0));
-
-        const regions = [...new Set([...currArray, ...prevArray].map(d => d.지역))].sort();
-        const prevLegend = prevNameStr || '비교 없음';
-        const palette = ['#1d4ed8', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#dc2626', '#14b8a6', '#6366f1'];
-
-        const getSeries = (dataField) => {
-            const series = [];
-            regions.forEach((r, idx) => {
-                const color = palette[idx % palette.length];
-                series.push({
-                    name: r, stack: prevLegend, type: 'bar', barGap: '5%',
-                    itemStyle: { color, opacity: 0.35 },
-                    label: { show: true, position: 'inside', color: '#1e293b', fontSize: 13, formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
-                    data: partners.map(p => { const match = prevArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
-                });
-                series.push({
-                    name: r, stack: currentMonthDef, type: 'bar',
-                    itemStyle: { color, opacity: 1 },
-                    label: { show: true, position: 'inside', color: '#fff', fontSize: 13, fontWeight: 'bold', formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
-                    data: partners.map(p => { const match = currArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
-                });
-            });
-            return series;
-        };
-
-        const setStackedChart = (chartInstance, field) => {
-            chartInstance.setOption({
-                tooltip: {
-                    trigger: 'axis', axisPointer: { type: 'shadow' },
-                    formatter: function (params) {
-                        if (!params.length) return '';
-                        const axisValue = params[0].axisValue;
-                        let prevTotal = 0; let currTotal = 0;
-                        params.forEach(p => {
-                            if (p.value > 0) { if (p.seriesIndex % 2 === 0) prevTotal += p.value; else currTotal += p.value; }
-                        });
-                        return `<strong>[${axisValue}]</strong><br/>▷ ${prevLegend}: ${formatNum(prevTotal)}<br/>▶ ${currentMonthDef}: ${formatNum(currTotal)}`;
-                    }
-                },
-                legend: { show: false },
-                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-                xAxis: { type: 'category', data: partners, axisLabel: { color: colors.textMuted, interval: 0 } },
-                yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } } },
-                series: getSeries(field)
-            }, true);
-        };
-
-        setStackedChart(charts.chart1, '인원');
-        setStackedChart(charts.chart2, '지상비');
-    }
-
-    function handleSort(colName) {
-        if (sortCol === colName) { sortDesc = !sortDesc; } else { sortCol = colName; sortDesc = false; }
-        applyFilter();
-    }
-
-    const tableCols = [
-        { key: '팀', name: '팀', isTeamCol: true },
-        { key: '협력사', name: '협력사' },
-        { key: '지역', name: '지역' },
-        { key: '인원', name: '송출 인원', align: 'right' },
-        { key: '지상비', name: '지상비', align: 'right' }
-    ];
-
-    function renderTable(dataArray) {
-        const tHeadRow = document.getElementById('tableHeadRow');
-        const tBody = document.getElementById('tableBody');
-        const showTeam = (selectedTeam === 'all');
-
-        document.getElementById('dataCount').innerText = `${dataArray.length}건 탑재됨`;
-        tHeadRow.innerHTML = ''; tBody.innerHTML = '';
-
-        tableCols.forEach(col => {
-            if (col.isTeamCol && !showTeam) return;
-            const th = document.createElement('th');
-            if (col.align) th.className = `text-${col.align}`;
-            let iconHtml = '<span class="sort-icon">⇅</span>';
-            if (sortCol === col.key) iconHtml = sortDesc ? `<span class="sort-icon active-desc">▼</span>` : `<span class="sort-icon active-asc">▲</span>`;
-            th.innerHTML = `<span class="sort-btn" onclick="handleSort('${col.key}')">${col.name} ${iconHtml}</span>`;
-            tHeadRow.appendChild(th);
-        });
-
-        let displayArray = [...dataArray];
-
-        if (tableViewMode === 'list') {
-            if (!sortCol) {
-                displayArray.sort((a, b) => {
-                    const ti = TEAM_ORDER.indexOf(a.팀), tj = TEAM_ORDER.indexOf(b.팀);
-                    if (ti !== tj) return ti - tj;
-                    const cmp = a.협력사.localeCompare(b.협력사, 'ko');
-                    if (cmp !== 0) return cmp;
-                    return a.지역.localeCompare(b.지역, 'ko');
-                });
+            if (selectedTeam === 'all') {
+                updateAllCharts(currTarget, chartPrevTarget, chartCompare);
             } else {
-                displayArray.sort((a, b) => {
-                    let valA = a[sortCol], valB = b[sortCol];
-                    if (typeof valA === 'string') valA = valA.toLowerCase();
-                    if (typeof valB === 'string') valB = valB.toLowerCase();
-                    if (valA < valB) return sortDesc ? 1 : -1;
-                    if (valA > valB) return sortDesc ? -1 : 1;
-                    return 0;
-                });
+                updateTeamCharts(currTarget, chartPrevTarget, chartCompare);
             }
-            displayArray.forEach(d => {
-                const tr = document.createElement('tr');
-                if (showTeam) tr.innerHTML += `<td>${d.팀}</td>`;
-                tr.innerHTML += `<td><strong>${d.협력사}</strong></td><td>${d.지역}</td><td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td><td class="text-right">${formatNum(d.지상비)}</td>`;
-                tBody.appendChild(tr);
+
+            renderTable(currTarget);
+        }
+
+        function initCharts() {
+            charts.chart1 = echarts.init(document.getElementById('chart1'));
+            charts.chart2 = echarts.init(document.getElementById('chart2'));
+        }
+
+        function updateAllCharts(currArray, prevArray, prevNameStr) {
+            document.getElementById('chart1Title').innerText = `팀별 송출 인원 비교`;
+            document.getElementById('chart2Title').innerText = `팀별 지상비 비교`;
+
+            const aggregate = (dataArr) => {
+                const result = {};
+                dataArr.forEach(d => {
+                    if (!result[d.팀]) result[d.팀] = { 인원: 0, 비용: 0 };
+                    result[d.팀].인원 += d.인원; result[d.팀].비용 += d.지상비;
+                });
+                return result;
+            };
+            const cMap = aggregate(currArray);
+            const pMap = aggregate(prevArray);
+            const uniqueKeys = TEAM_ORDER.filter(t => cMap[t] || pMap[t]);
+
+            const persCurrS = uniqueKeys.map(k => cMap[k]?.인원 || 0);
+            const persPrevS = uniqueKeys.map(k => pMap[k]?.인원 || 0);
+            const costCurrS = uniqueKeys.map(k => cMap[k]?.비용 || 0);
+            const costPrevS = uniqueKeys.map(k => pMap[k]?.비용 || 0);
+
+            const prevLegend = prevNameStr || '비교 없음';
+
+            const setGroupChart = (chartInstance, prevS, currS, currColor) => {
+                chartInstance.setOption({
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    legend: { data: [prevLegend, currentMonthDef], textStyle: { color: colors.text } },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'category', data: uniqueKeys, axisLabel: { color: colors.textMuted, interval: 0 } },
+                    yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } } },
+                    series: [
+                        { name: prevLegend, type: 'bar', data: prevS, itemStyle: { color: 'rgba(148, 163, 184, 0.4)' }, barGap: '10%' },
+                        { name: currentMonthDef, type: 'bar', data: currS, itemStyle: { color: currColor, borderRadius: [4, 4, 0, 0] } }
+                    ]
+                }, true);
+            };
+
+            setGroupChart(charts.chart1, persPrevS, persCurrS, new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.cyan }, { offset: 1, color: colors.primary }]));
+            setGroupChart(charts.chart2, costPrevS, costCurrS, new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.purple }, { offset: 1, color: colors.primary }]));
+        }
+
+        function updateTeamCharts(currArray, prevArray, prevNameStr) {
+            document.getElementById('chart1Title').innerText = `협력사/지역별 송출 인원 비교`;
+            document.getElementById('chart2Title').innerText = `협력사/지역별 지상비 비교`;
+
+            const partners = [...new Set([...currArray, ...prevArray].map(d => d.협력사))];
+            const partnerTotal = {};
+            currArray.forEach(d => { partnerTotal[d.협력사] = (partnerTotal[d.협력사] || 0) + d.인원; });
+            partners.sort((a, b) => (partnerTotal[b] || 0) - (partnerTotal[a] || 0));
+
+            const regions = [...new Set([...currArray, ...prevArray].map(d => d.지역))].sort();
+            const prevLegend = prevNameStr || '비교 없음';
+            const palette = ['#1d4ed8', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#dc2626', '#14b8a6', '#6366f1'];
+
+            const getSeries = (dataField) => {
+                const series = [];
+                regions.forEach((r, idx) => {
+                    const color = palette[idx % palette.length];
+                    series.push({
+                        name: r, stack: prevLegend, type: 'bar', barGap: '5%',
+                        itemStyle: { color, opacity: 0.35 },
+                        label: { show: true, position: 'inside', color: '#1e293b', fontSize: 13, formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
+                        data: partners.map(p => { const match = prevArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
+                    });
+                    series.push({
+                        name: r, stack: currentMonthDef, type: 'bar',
+                        itemStyle: { color, opacity: 1 },
+                        label: { show: true, position: 'inside', color: '#fff', fontSize: 13, fontWeight: 'bold', formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
+                        data: partners.map(p => { const match = currArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
+                    });
+                });
+                return series;
+            };
+
+            const setStackedChart = (chartInstance, field) => {
+                chartInstance.setOption({
+                    tooltip: {
+                        trigger: 'axis', axisPointer: { type: 'shadow' },
+                        formatter: function (params) {
+                            if (!params.length) return '';
+                            const axisValue = params[0].axisValue;
+                            let prevTotal = 0; let currTotal = 0;
+                            params.forEach(p => {
+                                if (p.value > 0) { if (p.seriesIndex % 2 === 0) prevTotal += p.value; else currTotal += p.value; }
+                            });
+                            return `<strong>[${axisValue}]</strong><br/>▷ ${prevLegend}: ${formatNum(prevTotal)}<br/>▶ ${currentMonthDef}: ${formatNum(currTotal)}`;
+                        }
+                    },
+                    legend: { show: false },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'category', data: partners, axisLabel: { color: colors.textMuted, interval: 0 } },
+                    yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } } },
+                    series: getSeries(field)
+                }, true);
+            };
+
+            setStackedChart(charts.chart1, '인원');
+            setStackedChart(charts.chart2, '지상비');
+        }
+
+        function handleSort(colName) {
+            if (sortCol === colName) { sortDesc = !sortDesc; } else { sortCol = colName; sortDesc = false; }
+            applyFilter();
+        }
+
+        const tableCols = [
+            { key: '팀', name: '팀', isTeamCol: true },
+            { key: '협력사', name: '협력사' },
+            { key: '지역', name: '지역' },
+            { key: '인원', name: '송출 인원', align: 'right' },
+            { key: '지상비', name: '지상비', align: 'right' }
+        ];
+
+        function renderTable(dataArray) {
+            const tHeadRow = document.getElementById('tableHeadRow');
+            const tBody = document.getElementById('tableBody');
+            const showTeam = (selectedTeam === 'all');
+
+            document.getElementById('dataCount').innerText = `${dataArray.length}건 탑재됨`;
+            tHeadRow.innerHTML = ''; tBody.innerHTML = '';
+
+            tableCols.forEach(col => {
+                if (col.isTeamCol && !showTeam) return;
+                const th = document.createElement('th');
+                if (col.align) th.className = `text-${col.align}`;
+                let iconHtml = '<span class="sort-icon">⇅</span>';
+                if (sortCol === col.key) iconHtml = sortDesc ? `<span class="sort-icon active-desc">▼</span>` : `<span class="sort-icon active-asc">▲</span>`;
+                th.innerHTML = `<span class="sort-btn" onclick="handleSort('${col.key}')">${col.name} ${iconHtml}</span>`;
+                tHeadRow.appendChild(th);
             });
-        } else if (tableViewMode === 'group') {
-            const regionMap = {};
-            displayArray.forEach(d => { if (!regionMap[d.지역]) regionMap[d.지역] = []; regionMap[d.지역].push(d); });
 
-            const sortedRegions = Object.keys(regionMap).sort((rA, rB) => {
-                const tiA = TEAM_ORDER.indexOf(regionMap[rA][0]?.팀 || '');
-                const tiB = TEAM_ORDER.indexOf(regionMap[rB][0]?.팀 || '');
-                if (tiA !== tiB) return tiA - tiB;
-                return rA.localeCompare(rB, 'ko');
-            });
+            let displayArray = [...dataArray];
 
-            sortedRegions.forEach(regionName => {
-                const gRow = document.createElement('tr');
-                gRow.className = 'group-header-row';
-                gRow.innerHTML = `<td colspan="${showTeam ? 5 : 4}">[지역 구분] ${regionName}</td>`;
-                tBody.appendChild(gRow);
-
-                const arr = regionMap[regionName];
-                if (sortCol) {
-                    arr.sort((a, b) => {
+            if (tableViewMode === 'list') {
+                if (!sortCol) {
+                    displayArray.sort((a, b) => {
+                        const ti = TEAM_ORDER.indexOf(a.팀), tj = TEAM_ORDER.indexOf(b.팀);
+                        if (ti !== tj) return ti - tj;
+                        const cmp = a.협력사.localeCompare(b.협력사, 'ko');
+                        if (cmp !== 0) return cmp;
+                        return a.지역.localeCompare(b.지역, 'ko');
+                    });
+                } else {
+                    displayArray.sort((a, b) => {
                         let valA = a[sortCol], valB = b[sortCol];
                         if (typeof valA === 'string') valA = valA.toLowerCase();
                         if (typeof valB === 'string') valB = valB.toLowerCase();
@@ -818,23 +1147,58 @@ tr:hover td { background: #f8fafc; }
                         if (valA > valB) return sortDesc ? -1 : 1;
                         return 0;
                     });
-                } else {
-                    arr.sort((a, b) => {
-                        const ti = TEAM_ORDER.indexOf(a.팀), tj = TEAM_ORDER.indexOf(b.팀);
-                        if (ti !== tj) return ti - tj;
-                        return a.협력사.localeCompare(b.협력사, 'ko');
-                    });
                 }
-
-                arr.forEach(d => {
+                displayArray.forEach(d => {
                     const tr = document.createElement('tr');
                     if (showTeam) tr.innerHTML += `<td>${d.팀}</td>`;
-                    tr.innerHTML += `<td style="padding-left:24px"><strong>${d.협력사}</strong></td><td style="color:var(--text-secondary)">${d.지역}</td><td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td><td class="text-right">${formatNum(d.지상비)}</td>`;
+                    tr.innerHTML += `<td><strong>${d.협력사}</strong></td><td>${d.지역}</td><td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td><td class="text-right">${formatNum(d.지상비)}</td>`;
                     tBody.appendChild(tr);
                 });
-            });
+            } else if (tableViewMode === 'group') {
+                const regionMap = {};
+                displayArray.forEach(d => { if (!regionMap[d.지역]) regionMap[d.지역] = []; regionMap[d.지역].push(d); });
+
+                const sortedRegions = Object.keys(regionMap).sort((rA, rB) => {
+                    const tiA = TEAM_ORDER.indexOf(regionMap[rA][0]?.팀 || '');
+                    const tiB = TEAM_ORDER.indexOf(regionMap[rB][0]?.팀 || '');
+                    if (tiA !== tiB) return tiA - tiB;
+                    return rA.localeCompare(rB, 'ko');
+                });
+
+                sortedRegions.forEach(regionName => {
+                    const gRow = document.createElement('tr');
+                    gRow.className = 'group-header-row';
+                    gRow.innerHTML = `<td colspan="${showTeam ? 5 : 4}">[지역 구분] ${regionName}</td>`;
+                    tBody.appendChild(gRow);
+
+                    const arr = regionMap[regionName];
+                    if (sortCol) {
+                        arr.sort((a, b) => {
+                            let valA = a[sortCol], valB = b[sortCol];
+                            if (typeof valA === 'string') valA = valA.toLowerCase();
+                            if (typeof valB === 'string') valB = valB.toLowerCase();
+                            if (valA < valB) return sortDesc ? 1 : -1;
+                            if (valA > valB) return sortDesc ? -1 : 1;
+                            return 0;
+                        });
+                    } else {
+                        arr.sort((a, b) => {
+                            const ti = TEAM_ORDER.indexOf(a.팀), tj = TEAM_ORDER.indexOf(b.팀);
+                            if (ti !== tj) return ti - tj;
+                            return a.협력사.localeCompare(b.협력사, 'ko');
+                        });
+                    }
+
+                    arr.forEach(d => {
+                        const tr = document.createElement('tr');
+                        if (showTeam) tr.innerHTML += `<td>${d.팀}</td>`;
+                        tr.innerHTML += `<td style="padding-left:24px"><strong>${d.협력사}</strong></td><td style="color:var(--text-secondary)">${d.지역}</td><td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td><td class="text-right">${formatNum(d.지상비)}</td>`;
+                        tBody.appendChild(tr);
+                    });
+                });
+            }
         }
-    }
     </script>
 </body>
+
 </html>
