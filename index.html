@@ -815,7 +815,21 @@
         const TEAM_ORDER = [
             "동남아1팀", "동남아2팀", "동남아3팀", "일본팀", "중국팀",
             "서유럽팀", "스페인/북유럽팀", "동유럽팀", "지중해/인도/아프리카팀",
-            "프리미엄팀", "미주팀", "남태평양팀", "부산�        async function loadData() {
+            "프리미엄팀", "미주팀", "남태평양팀", "부산지사", "대구지사", "크루즈테마팀"
+        ];
+
+        async function fetchJsonSafe(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (e) {
+                console.warn(url + " 로드 실패:", e);
+                return null;
+            }
+        }
+
+        async function loadData() {
             try {
                 // 1. 매니페스트 파일 로드 (./data/index.json 또는 ./index.json 시도)
                 let manifest = await fetchJsonSafe('./data/index.json');
@@ -843,13 +857,13 @@
                 initCharts();
                 setupEventListeners();
 
-                // 자동 로그인(세션) 상태에서는 display:flex이미 설정됨
-                // 로그인 화면에서는 실제 마운트 후 카드 수동 resize 발생
-                // => 양쪽 코드경로에서만 applyFilter 호출, resize는 login초기 코드에서 중복 처리
+                // 브라우저 레이아웃 완료 후 차트 렌더링 (초기 찌그러짐 방지)
+                // setTimeout으로 DOM 완전 렌더링 후 실행
                 setTimeout(() => {
                     Object.values(charts).forEach(c => c && c.resize());
                     applyFilter();
-                    setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 200);
+                    // applyFilter 후 추가 resize로 막대 정중앙 정렬 보장
+                    setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 150);
                 }, 50);
 
                 // ResizeObserver: 차트 컨테이너 크기 변경 시 자동 재렌더링
@@ -860,28 +874,6 @@
                     });
                     document.querySelectorAll('#chart1, #chart2').forEach(el => ro.observe(el));
                 }
-
-            } catch (err) {
-                console.error('데이터 로드 실패:', err);
-                document.getElementById('currentTeamTitle').innerText = '⚠️ 데이터 로드 실패 — 로컈 서버 또는 GitHub Pages에서 확인해주세요.';
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', loadData);실패');
-
-                preprocessData();
-                extractMonthsAndInit();
-                initSidebar();
-                initCharts();
-                setupEventListeners();
-                // 브라우저 레이아웃 완료 후 차트 렌더링 (초기 찌그러짐 방지)
-                // setTimeout으로 DOM 완전 렌더링 후 실행
-                setTimeout(() => {
-                    Object.values(charts).forEach(c => c && c.resize());
-                    applyFilter();
-                    // applyFilter 후 추가 resize로 막대 정중앙 정렬 보장
-                    setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 150);
-                }, 50);
 
             } catch (err) {
                 console.error('데이터 로드 실패:', err);
