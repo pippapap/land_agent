@@ -810,8 +810,6 @@
 
         let sortCol = '인원';
         let sortDesc = true;
-
-        // 팀 고정 순서 (정렬 기준)
         const TEAM_ORDER = [
             "동남아1팀", "동남아2팀", "동남아3팀", "일본팀", "중국팀",
             "서유럽팀", "스페인/북유럽팀", "동유럽팀", "지중해/인도/아프리카팀",
@@ -820,11 +818,18 @@
 
         async function fetchJsonSafe(url) {
             try {
-                const response = await fetch(url);
-                if (!response.ok) return null;
+                let response = await fetch(url);
+                if (!response.ok) {
+                    const encoded = encodeURI(url);
+                    if (encoded !== url) response = await fetch(encoded);
+                }
+                if (!response.ok) {
+                    console.warn('[fetchJsonSafe] HTTP ' + response.status + ' 에러:', url);
+                    return null;
+                }
                 return await response.json();
             } catch (e) {
-                console.warn(url + " 로드 실패:", e);
+                console.warn('[fetchJsonSafe] 실패 (' + url + '):', e);
                 return null;
             }
         }
