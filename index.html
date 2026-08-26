@@ -834,6 +834,15 @@
             }
         }
 
+                // === 데이터 전처리 (팀명 매핑) ===
+        function preprocessData() {
+            rawData.forEach(d => {
+                if (d.팀 === '동남아개별' || d.팀 === '동남아/아시아세미' || d.팀 === '동남아세미' || d.팀 === '세미/동남아세미') {
+                    d.팀 = '동남아3팀';
+                }
+            });
+        }
+
         async function loadData() {
             try {
                 // 1. 매니페스트 파일 로드 (./data/index.json 또는 ./index.json 시도)
@@ -882,7 +891,7 @@
 
             } catch (err) {
                 console.error('데이터 로드 실패:', err);
-                document.getElementById('currentTeamTitle').innerText = '⚠️ 데이터 로드 실패 — 로컬 서버 또는 GitHub Pages에서 확인해주세요.';
+                document.getElementById('currentTeamTitle').innerText = '⚠️ 로드 오류: ' + (err && err.message ? err.message : err) + ' (F12 콘솔 확인)';
             }
         }
 
