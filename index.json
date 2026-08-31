@@ -1,4 +1,10 @@
 [
-  { "label": "2026-06", "file": "data_06.json" },
-  { "label": "2026-07", "file": "data_07.json" }
+  {
+    "label": "2026-06",
+    "file": "data_26_06.json"
+  },
+  {
+    "label": "2026-07",
+    "file": "data_26_07.json"
+  }
 ]

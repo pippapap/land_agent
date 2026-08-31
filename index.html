@@ -855,12 +855,18 @@
             }
         }
 
-        // === 데이터 전처리 (팀명 매핑) ===
+        // === 데이터 전처리 (팀명 매핑 및 인당 지상비 정규화) ===
         function preprocessData() {
             rawData.forEach(d => {
                 // 태국파트, 필리핀/말레이시아파트 → 동남아3팀으로 통합
                 if (d.팀 === '태국파트' || d.팀 === '필리핀/말레이시아파트') {
                     d.팀 = '동남아3팀';
+                }
+                // 인당 지상비 정규화 및 결측치 자동 계산 보정
+                if (d['인당 지상비'] === undefined || d['인당 지상비'] === null || d['인당 지상비'] === '') {
+                    d['인당 지상비'] = (d['인원'] > 0) ? Math.round((d['지상비'] || 0) / d['인원']) : 0;
+                } else {
+                    d['인당 지상비'] = Number(d['인당 지상비']) || 0;
                 }
             });
         }
@@ -1685,7 +1691,8 @@
             { key: '협력사', name: '협력사' },
             { key: '지역', name: '지역' },
             { key: '인원', name: '송출 인원', align: 'right' },
-            { key: '지상비', name: '지상비', align: 'right' }
+            { key: '지상비', name: '지상비', align: 'right' },
+            { key: '인당 지상비', name: '인당 지상비', align: 'right' }
         ];
 
         function renderTable(dataArray) {
@@ -1741,7 +1748,8 @@
                     tr.innerHTML += `<td><strong>${d.협력사}</strong>${isTop ? '<span class="top-badge">1위</span>' : ''}</td>
                         <td>${d.지역}</td>
                         <td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td>
-                        <td class="text-right">${formatNum(d.지상비)}</td>`;
+                        <td class="text-right">${formatNum(d.지상비)}</td>
+                        <td class="text-right">${formatNum(d['인당 지상비'] || (d.인원 > 0 ? Math.round(d.지상비 / d.인원) : 0))}</td>`;
                     tBody.appendChild(tr);
                 });
             } else if (tableViewMode === 'group') {
@@ -1780,10 +1788,11 @@
                     const gRow = document.createElement('tr');
                     gRow.className = 'group-header-row';
                     const titleText = showTeam ? `[${g.team}] ${g.region}` : `[지역 구분] ${g.region}`;
-                    gRow.innerHTML = `<td colspan="${showTeam ? 5 : 4}">
+                    const avgCost = g.totalPersonnel > 0 ? Math.round(g.totalCost / g.totalPersonnel) : 0;
+                    gRow.innerHTML = `<td colspan="${showTeam ? 6 : 5}">
                         <strong>${titleText}</strong>
                         <span style="font-weight:normal; font-size:0.85rem; color:#64748b; margin-left:10px;">
-                            (지역 총 송출: <strong style="color:var(--accent-navy);">${formatNum(g.totalPersonnel)}명</strong> / 지상비: <strong>${formatNum(g.totalCost)}원</strong>)
+                            (지역 총 송출: <strong style="color:var(--accent-navy);">${formatNum(g.totalPersonnel)}명</strong> / 지상비: <strong>${formatNum(g.totalCost)}원</strong> / 평균 인당: <strong>${formatNum(avgCost)}원</strong>)
                         </span>
                     </td>`;
                     tBody.appendChild(gRow);
@@ -1814,7 +1823,8 @@
                         tr.innerHTML += `<td style="padding-left:${showTeam ? '20px' : '24px'}"><strong>${d.협력사}</strong>${isTop ? '<span class="top-badge">1위</span>' : ''}</td>
                             <td style="color:var(--text-secondary)">${d.지역}</td>
                             <td class="text-right" style="color:var(--accent-cyan);font-weight:700">${formatNum(d.인원)}</td>
-                            <td class="text-right">${formatNum(d.지상비)}</td>`;
+                            <td class="text-right">${formatNum(d.지상비)}</td>
+                            <td class="text-right">${formatNum(d['인당 지상비'] || (d.인원 > 0 ? Math.round(d.지상비 / d.인원) : 0))}</td>`;
                         tBody.appendChild(tr);
                     });
                 });
