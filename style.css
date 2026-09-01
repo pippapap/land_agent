@@ -85,47 +85,121 @@ body {
     border-color: #fca5a5;
 }
 
-/* 사분면 콤보박스 및 헤더 컨트롤 */
-.quadrant-control-wrap {
-    display: flex;
-    align-items: center;
+/* 사분면 4개 카드 버튼 그리드 */
+.quadrant-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 12px;
-    flex-wrap: wrap;
+    margin-bottom: 16px;
 }
 
-.quadrant-select-box {
+.quadrant-card-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    position: relative;
+    user-select: none;
+    width: 100%;
+}
+
+.quadrant-card-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.quadrant-card-btn .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 6px;
+}
+
+.quadrant-card-btn .card-title {
+    font-size: 0.92rem;
+    font-weight: 800;
     display: flex;
     align-items: center;
     gap: 6px;
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 2px 8px 2px 10px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    letter-spacing: -0.02em;
 }
 
-.quadrant-select-box label {
-    font-size: 0.8rem;
+.quadrant-card-btn .card-tag {
+    font-size: 0.75rem;
     font-weight: 700;
-    color: var(--accent-navy);
-    white-space: nowrap;
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
-.quadrant-select {
-    border: none;
-    background: transparent;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    padding: 6px 4px;
-    outline: none;
-    cursor: pointer;
-    max-width: 480px;
+.quadrant-card-btn .card-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    word-break: keep-all;
 }
 
-.quadrant-select option {
-    font-weight: 500;
-    padding: 4px;
+/* 🟢 Q1. 성과 우수 */
+.quadrant-card-btn.q1-card {
+    border-color: #bbf7d0;
+    background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+}
+.quadrant-card-btn.q1-card .card-title { color: #15803d; }
+.quadrant-card-btn.q1-card .card-tag { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.quadrant-card-btn.q1-card:hover { border-color: #22c55e; }
+.quadrant-card-btn.q1-card.active {
+    border-color: #16a34a;
+    background: #dcfce7;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25), 0 4px 12px rgba(22, 163, 74, 0.15);
+}
+
+/* 🔵 Q2. 효율 우수 */
+.quadrant-card-btn.q2-card {
+    border-color: #bae6fd;
+    background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+}
+.quadrant-card-btn.q2-card .card-title { color: #0369a1; }
+.quadrant-card-btn.q2-card .card-tag { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+.quadrant-card-btn.q2-card:hover { border-color: #0284c7; }
+.quadrant-card-btn.q2-card.active {
+    border-color: #0284c7;
+    background: #e0f2fe;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25), 0 4px 12px rgba(2, 132, 199, 0.15);
+}
+
+/* 🟠 Q3. 개선 필요 */
+.quadrant-card-btn.q3-card {
+    border-color: #fed7aa;
+    background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
+}
+.quadrant-card-btn.q3-card .card-title { color: #c2410c; }
+.quadrant-card-btn.q3-card .card-tag { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+.quadrant-card-btn.q3-card:hover { border-color: #ea580c; }
+.quadrant-card-btn.q3-card.active {
+    border-color: #ea580c;
+    background: #ffedd5;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.25), 0 4px 12px rgba(234, 88, 12, 0.15);
+}
+
+/* 🔴 Q4. 성과 부진 */
+.quadrant-card-btn.q4-card {
+    border-color: #fecaca;
+    background: linear-gradient(180deg, #ffffff 0%, #fef2f2 100%);
+}
+.quadrant-card-btn.q4-card .card-title { color: #b91c1c; }
+.quadrant-card-btn.q4-card .card-tag { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.quadrant-card-btn.q4-card:hover { border-color: #dc2626; }
+.quadrant-card-btn.q4-card.active {
+    border-color: #dc2626;
+    background: #fee2e2;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25), 0 4px 12px rgba(220, 38, 38, 0.15);
 }
 
 .text-center {

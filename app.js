@@ -24,8 +24,10 @@ const colors = {
     text: '#1e293b', textMuted: '#64748b'
 };
 
-// === 데이터 전처리 (팀 병합) ===
+// === 데이터 전처리 (팀 병합 및 인원 0 필터링) ===
 function preprocessData() {
+    // 인원이 0 이하이거나 유효하지 않은 데이터 제외 (인원 0 노출 방지)
+    rawData = rawData.filter(d => (Number(d.인원) || 0) > 0);
     rawData.forEach(d => {
         if (d.팀 === '태국파트' || d.팀 === '필리핀/말레이시아파트') {
             d.팀 = '동남아3팀';
