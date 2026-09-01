@@ -1657,20 +1657,17 @@
                         },
                         label: {
                             show: true,
-                            position: 'inside',
-                            align: 'center',
+                            position: 'left',
+                            distance: 6,
+                            align: 'right',
                             verticalAlign: 'middle',
-                            color: prevShade.text || '#ffffff',
+                            color: '#475569',
                             fontSize: 10,
                             fontWeight: 700,
                             lineHeight: 13,
                             fontFamily: 'Pretendard, sans-serif',
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
-                                const total = prevTotals[p.dataIndex] || 1;
-                                // 막대 세그먼트 높이가 너무 낮으면 겹침 방지를 위해 숨김
-                                const minRatio = 0.07;
-                                if (p.value / total < minRatio && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 return `${r}\n${valStr}`;
                             }
@@ -1681,7 +1678,7 @@
                         })
                     });
 
-                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 내부 inside에 지역명+수치 표기)
+                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 우측 right에 지역명+수치 표기)
                     series.push({
                         name: `${r} (${currentMonthDef})`,
                         stack: currentMonthDef,
@@ -1695,20 +1692,17 @@
                         },
                         label: {
                             show: true,
-                            position: 'inside',
-                            align: 'center',
+                            position: 'right',
+                            distance: 6,
+                            align: 'left',
                             verticalAlign: 'middle',
-                            color: currShade.text || '#ffffff',
+                            color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
                             fontSize: 10,
                             fontWeight: 700,
                             lineHeight: 13,
                             fontFamily: 'Pretendard, sans-serif',
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
-                                const total = currTotals[p.dataIndex] || 1;
-                                // 막대 세그먼트 높이가 너무 낮으면 겹침 방지를 위해 숨김
-                                const minRatio = 0.07;
-                                if (p.value / total < minRatio && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 return `${r}\n${valStr}`;
                             }

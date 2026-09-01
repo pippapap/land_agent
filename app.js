@@ -311,17 +311,16 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                 itemStyle: { color, opacity: 0.35 },
                 label: {
                     show: true,
-                    position: 'inside',
-                    align: 'center',
+                    position: 'left',
+                    distance: 6,
+                    align: 'right',
                     verticalAlign: 'middle',
-                    color: '#1e293b',
+                    color: '#475569',
                     fontSize: 10,
                     fontWeight: 700,
                     lineHeight: 13,
                     formatter: p => {
                         if (!p.value || p.value <= 0) return '';
-                        const total = prevTotals[p.dataIndex] || 1;
-                        if (p.value / total < 0.07 && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
                         return `${r}\n${formatNum(p.value)}${dataField === '인원' ? '명' : '원'}`;
                     }
                 },
@@ -332,17 +331,16 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                 itemStyle: { color, opacity: 1 },
                 label: {
                     show: true,
-                    position: 'inside',
-                    align: 'center',
+                    position: 'right',
+                    distance: 6,
+                    align: 'left',
                     verticalAlign: 'middle',
-                    color: '#ffffff',
+                    color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
                     fontSize: 10,
                     fontWeight: 700,
                     lineHeight: 13,
                     formatter: p => {
                         if (!p.value || p.value <= 0) return '';
-                        const total = currTotals[p.dataIndex] || 1;
-                        if (p.value / total < 0.07 && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
                         return `${r}\n${formatNum(p.value)}${dataField === '인원' ? '명' : '원'}`;
                     }
                 },
