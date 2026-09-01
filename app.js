@@ -300,42 +300,50 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
 
     const getSeries = (dataField) => {
         const series = [];
-        // 현재월 총계 (막대 위 라벨용)
-        const currTotals = buildStackTopLabels(dataField, currentMonthDef, currArray);
         const prevTotals = buildStackTopLabels(dataField, prevLegend, prevArray);
+        const currTotals = buildStackTopLabels(dataField, currentMonthDef, currArray);
 
         regions.forEach((r, idx) => {
             const color = palette[idx % palette.length];
-            const isLastRegion = (idx === regions.length - 1);
 
             series.push({
-                name: r, stack: prevLegend, type: 'bar', barGap: '5%',
+                name: r, stack: prevLegend, type: 'bar', barGap: '12%', barMaxWidth: 48,
                 itemStyle: { color, opacity: 0.35 },
                 label: {
-                    show: isLastRegion,
-                    position: 'top',
-                    color: '#64748b',
-                    fontSize: 11,
-                    fontWeight: '600',
-                    formatter: (p) => {
-                        const total = prevTotals[p.dataIndex];
-                        return total > 0 ? formatNum(total) : '';
+                    show: true,
+                    position: 'inside',
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    color: '#1e293b',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    lineHeight: 13,
+                    formatter: p => {
+                        if (!p.value || p.value <= 0) return '';
+                        const total = prevTotals[p.dataIndex] || 1;
+                        if (p.value / total < 0.07 && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
+                        return `${r}\n${formatNum(p.value)}${dataField === '인원' ? '명' : '원'}`;
                     }
                 },
                 data: partners.map(p => { const match = prevArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
             });
             series.push({
-                name: r, stack: currentMonthDef, type: 'bar',
+                name: r, stack: currentMonthDef, type: 'bar', barMaxWidth: 48,
                 itemStyle: { color, opacity: 1 },
                 label: {
-                    show: isLastRegion,
-                    position: 'top',
-                    color: '#1e3a8a',
-                    fontSize: 12,
-                    fontWeight: 'bold',
-                    formatter: (p) => {
-                        const total = currTotals[p.dataIndex];
-                        return total > 0 ? `${formatNum(total)}명` : '';
+                    show: true,
+                    position: 'inside',
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    color: '#ffffff',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    lineHeight: 13,
+                    formatter: p => {
+                        if (!p.value || p.value <= 0) return '';
+                        const total = currTotals[p.dataIndex] || 1;
+                        if (p.value / total < 0.07 && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
+                        return `${r}\n${formatNum(p.value)}${dataField === '인원' ? '명' : '원'}`;
                     }
                 },
                 data: partners.map(p => { const match = currArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })

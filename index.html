@@ -1594,6 +1594,14 @@
                 const sortedRegionsCurr = [...regions].sort((a, b) => (currRegionTotals[b] || 0) - (currRegionTotals[a] || 0));
                 const sortedRegionsPrev = [...regions].sort((a, b) => (prevRegionTotals[b] || 0) - (prevRegionTotals[a] || 0));
 
+                // 각 협력사별 총합 사전 계산
+                const prevTotals = partners.map(p =>
+                    prevArray.filter(d => d.협력사 === p).reduce((s, d) => s + (d[dataField] || 0), 0)
+                );
+                const currTotals = partners.map(p =>
+                    currArray.filter(d => d.협력사 === p).reduce((s, d) => s + (d[dataField] || 0), 0)
+                );
+
                 // 상단 범례용 더미 시리즈
                 // ※ stack + data:0배열 필수: 없으면 독립 바 그룹으로 인식되어 레이아웃이 우측 쏠림
                 series.push(
@@ -1634,39 +1642,77 @@
                     // 당월 색상을 맵에 저장 (툴팁 팝업에서 사용)
                     currColorMap[r] = currShade.bg;
 
-                    // 이전 데이터 스택 (회색 음영 계열 - 막대 왼쪽 바깥에 지역명+수치 표기)
+                    // 이전 데이터 스택 (회색 음영 계열 - 막대 내부 inside에 지역명+수치 표기)
                     series.push({
                         name: `${r} (${prevLegend})`,
                         stack: prevLegend,
                         type: 'bar',
-                        barGap: '15%',
-                        barMaxWidth: 38,
+                        barGap: '12%',
+                        barMaxWidth: 48,
                         itemStyle: {
                             color: prevShade.bg,
                             borderColor: '#ffffff',
-                            borderWidth: 1.5,
+                            borderWidth: 1.2,
                             borderRadius: [2, 2, 0, 0]
                         },
-                        label: { show: false },
+                        label: {
+                            show: true,
+                            position: 'inside',
+                            align: 'center',
+                            verticalAlign: 'middle',
+                            color: prevShade.text || '#ffffff',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            lineHeight: 13,
+                            fontFamily: 'Pretendard, sans-serif',
+                            formatter: p => {
+                                if (!p.value || p.value <= 0) return '';
+                                const total = prevTotals[p.dataIndex] || 1;
+                                // 막대 세그먼트 높이가 너무 낮으면 겹침 방지를 위해 숨김
+                                const minRatio = 0.07;
+                                if (p.value / total < minRatio && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
+                                const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
+                                return `${r}\n${valStr}`;
+                            }
+                        },
                         data: partners.map(p => {
                             const match = prevArray.find(d => d.협력사 === p && d.지역 === r);
                             return match ? match[dataField] : 0;
                         })
                     });
 
-                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 오른쪽 바깥에 지역명+수치 표기)
+                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 내부 inside에 지역명+수치 표기)
                     series.push({
                         name: `${r} (${currentMonthDef})`,
                         stack: currentMonthDef,
                         type: 'bar',
-                        barMaxWidth: 38,
+                        barMaxWidth: 48,
                         itemStyle: {
                             color: currShade.bg,
                             borderColor: '#ffffff',
-                            borderWidth: 1.5,
-                            borderRadius: [3, 3, 0, 0]
+                            borderWidth: 1.2,
+                            borderRadius: [2, 2, 0, 0]
                         },
-                        label: { show: false },
+                        label: {
+                            show: true,
+                            position: 'inside',
+                            align: 'center',
+                            verticalAlign: 'middle',
+                            color: currShade.text || '#ffffff',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            lineHeight: 13,
+                            fontFamily: 'Pretendard, sans-serif',
+                            formatter: p => {
+                                if (!p.value || p.value <= 0) return '';
+                                const total = currTotals[p.dataIndex] || 1;
+                                // 막대 세그먼트 높이가 너무 낮으면 겹침 방지를 위해 숨김
+                                const minRatio = 0.07;
+                                if (p.value / total < minRatio && p.value < (dataField === '인원' ? 8 : 2000000)) return '';
+                                const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
+                                return `${r}\n${valStr}`;
+                            }
+                        },
                         data: partners.map(p => {
                             const match = currArray.find(d => d.협력사 === p && d.지역 === r);
                             return match ? match[dataField] : 0;
@@ -1681,12 +1727,6 @@
                 // 각 막대 최상단 총합 레이블 (투명 더미 시리즈)
                 // 값이 0이므로 스택 높이에 영향 없이 레이블만 노출
                 // ──────────────────────────────────────────────────
-                const prevTotals = partners.map(p =>
-                    prevArray.filter(d => d.협력사 === p).reduce((s, d) => s + (d[dataField] || 0), 0)
-                );
-                const currTotals = partners.map(p =>
-                    currArray.filter(d => d.협력사 === p).reduce((s, d) => s + (d[dataField] || 0), 0)
-                );
 
                 // 이전 막대 최상단 총합 레이블 (투명 더미 슬라이스로 위치 고정)
                 series.push({
