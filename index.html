@@ -1693,7 +1693,7 @@
                     // 당월 색상을 맵에 저장 (툴팁 팝업에서 사용)
                     currColorMap[r] = currShade.bg;
 
-                    // 이전 데이터 스택 (회색 음영 계열 - 막대 좌측 left에 단일행 배지로 지역명+수치 표기 및 지시선 연결)
+                    // 이전 데이터 스택 (회색 음영 계열 - 대각선 부채꼴 지시선 및 수직 분산 레이블)
                     series.push({
                         name: `${r} (${prevLegend})`,
                         stack: prevLegend,
@@ -1716,11 +1716,11 @@
                             fontSize: 10,
                             fontWeight: 700,
                             fontFamily: 'Pretendard, sans-serif',
-                            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
                             borderColor: '#cbd5e1',
-                            borderWidth: 0.8,
-                            borderRadius: 3,
-                            padding: [2, 5],
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            padding: [2, 6],
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
@@ -1729,28 +1729,50 @@
                         },
                         labelLayout: {
                             hideOverlap: false,
-                            moveOverlap: 'shiftY',
-                            dx: -4
-                        },
-                        labelLine: {
-                            show: true,
-                            showAbove: true,
-                            length2: 8,
-                            minTurnAngle: 60,
-                            lineStyle: {
-                                color: '#94a3b8',
-                                width: 1,
-                                type: 'solid'
-                            }
+                            moveOverlap: 'shiftY'
                         },
                         data: partners.map(p => {
                             const match = prevArray.find(d => d.협력사 === p && d.지역 === r);
                             const val = match ? match[dataField] : 0;
-                            return val > 0 ? { value: val } : { value: 0, label: { show: false }, labelLine: { show: false } };
+                            if (!val || val <= 0) {
+                                return { value: 0, label: { show: false }, labelLine: { show: false } };
+                            }
+                            // 해당 협력사 내 활성 지역 목록 및 순위
+                            const activeRegions = sortedRegionsPrev.filter(reg => {
+                                const m = prevArray.find(d => d.협력사 === p && d.지역 === reg);
+                                return m && m[dataField] > 0;
+                            });
+                            const count = activeRegions.length;
+                            const rank = activeRegions.indexOf(r);
+                            let dx = -8, dy = 0;
+                            if (count > 1) {
+                                const mid = (count - 1) / 2;
+                                const step = rank - mid;
+                                dy = Math.round(step * 14); // 위아래로 넓게 펼침
+                                dx = Math.round(-8 - Math.abs(step) * 14); // 대각선으로 바깥쪽 확장
+                            }
+                            return {
+                                value: val,
+                                label: {
+                                    offset: [dx, dy]
+                                },
+                                labelLine: {
+                                    show: true,
+                                    showAbove: true,
+                                    length: Math.max(8, Math.round(Math.abs(dx) * 0.7)),
+                                    length2: 6,
+                                    minTurnAngle: 0,
+                                    lineStyle: {
+                                        color: '#94a3b8',
+                                        width: 1.2,
+                                        type: 'solid'
+                                    }
+                                }
+                            };
                         })
                     });
 
-                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 우측 right에 단일행 배지로 지역명+수치 표기 및 지시선 연결)
+                    // 당월 데이터 스택 (단일 색상 계열 - 대각선 부채꼴 지시선 및 수직 분산 레이블)
                     series.push({
                         name: `${r} (${currentMonthDef})`,
                         stack: currentMonthDef,
@@ -1768,15 +1790,15 @@
                             distance: 10,
                             align: 'left',
                             verticalAlign: 'middle',
-                            color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
+                            color: dataField === '인원' ? '#1e40af' : '#6b21a8',
                             fontSize: 10,
                             fontWeight: 700,
                             fontFamily: 'Pretendard, sans-serif',
                             backgroundColor: dataField === '인원' ? 'rgba(239, 246, 255, 0.95)' : 'rgba(250, 245, 255, 0.95)',
-                            borderColor: dataField === '인원' ? '#bfdbfe' : '#ddd6fe',
-                            borderWidth: 0.8,
-                            borderRadius: 3,
-                            padding: [2, 5],
+                            borderColor: dataField === '인원' ? '#93c5fd' : '#c4b5fd',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            padding: [2, 6],
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
@@ -1785,24 +1807,46 @@
                         },
                         labelLayout: {
                             hideOverlap: false,
-                            moveOverlap: 'shiftY',
-                            dx: 4
-                        },
-                        labelLine: {
-                            show: true,
-                            showAbove: true,
-                            length2: 8,
-                            minTurnAngle: 60,
-                            lineStyle: {
-                                color: dataField === '인원' ? '#93c5fd' : '#c4b5fd',
-                                width: 1,
-                                type: 'solid'
-                            }
+                            moveOverlap: 'shiftY'
                         },
                         data: partners.map(p => {
                             const match = currArray.find(d => d.협력사 === p && d.지역 === r);
                             const val = match ? match[dataField] : 0;
-                            return val > 0 ? { value: val } : { value: 0, label: { show: false }, labelLine: { show: false } };
+                            if (!val || val <= 0) {
+                                return { value: 0, label: { show: false }, labelLine: { show: false } };
+                            }
+                            // 해당 협력사 내 활성 지역 목록 및 순위
+                            const activeRegions = sortedRegionsCurr.filter(reg => {
+                                const m = currArray.find(d => d.협력사 === p && d.지역 === reg);
+                                return m && m[dataField] > 0;
+                            });
+                            const count = activeRegions.length;
+                            const rank = activeRegions.indexOf(r);
+                            let dx = 8, dy = 0;
+                            if (count > 1) {
+                                const mid = (count - 1) / 2;
+                                const step = rank - mid;
+                                dy = Math.round(step * 14); // 위아래로 넓게 펼침
+                                dx = Math.round(8 + Math.abs(step) * 14); // 대각선으로 바깥쪽 확장
+                            }
+                            return {
+                                value: val,
+                                label: {
+                                    offset: [dx, dy]
+                                },
+                                labelLine: {
+                                    show: true,
+                                    showAbove: true,
+                                    length: Math.max(8, Math.round(dx * 0.7)),
+                                    length2: 6,
+                                    minTurnAngle: 0,
+                                    lineStyle: {
+                                        color: dataField === '인원' ? '#3b82f6' : '#8b5cf6',
+                                        width: 1.2,
+                                        type: 'solid'
+                                    }
+                                }
+                            };
                         })
                     });
                 });
@@ -1979,13 +2023,13 @@
                         textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
                     },
                     grid: {
-                        left: '8px',
-                        right: '8px',
+                        left: '20px',
+                        right: '48px',
                         top: '70px',
                         bottom: needsZoom ? '70px' : '45px',
                         containLabel: true
                     },
-                    barCategoryGap: '40%',
+                    barCategoryGap: '35%',
                     xAxis: {
                         type: 'category',
                         data: partners,
