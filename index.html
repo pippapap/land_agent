@@ -1402,7 +1402,7 @@
                             fontFamily: 'Pretendard, sans-serif'
                         }
                     },
-                    grid: { left: '3%', right: '4%', top: '65px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
+                    grid: { left: '3%', right: '4%', top: '70px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
                     barCategoryGap: '40%',
                     xAxis: {
                         type: 'category',
@@ -1461,14 +1461,18 @@
                             label: {
                                 show: true,
                                 position: 'top',
-                                distance: 5,
-                                offset: [-6, 0],
-                                align: 'right',
-                                color: '#64748b',
+                                distance: 6,
+                                align: 'center',
+                                color: '#475569',
                                 fontSize: 11,
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 fontFamily: 'Pretendard, sans-serif',
-                                formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value)) : ''
+                                backgroundColor: 'rgba(241, 245, 249, 0.95)',
+                                borderColor: '#cbd5e1',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                padding: [2, 5],
+                                formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value) + '명') : ''
                             }
                         },
                         {
@@ -1485,14 +1489,18 @@
                             label: {
                                 show: true,
                                 position: 'top',
-                                distance: 5,
-                                offset: [6, 0],
-                                align: 'left',
-                                color: field === '인원' ? '#1d4ed8' : '#7c3aed',
+                                distance: 6,
+                                align: 'center',
+                                color: field === '인원' ? '#1d4ed8' : '#6b21a8',
                                 fontSize: 11,
-                                fontWeight: 700,
+                                fontWeight: 800,
                                 fontFamily: 'Pretendard, sans-serif',
-                                formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value)) : ''
+                                backgroundColor: field === '인원' ? 'rgba(219, 234, 254, 0.95)' : 'rgba(237, 233, 254, 0.95)',
+                                borderColor: field === '인원' ? '#93c5fd' : '#c4b5fd',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                padding: [2, 5],
+                                formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value) + '명') : ''
                             }
                         }
                     ]
@@ -1723,8 +1731,7 @@
                         show: true,
                         position: 'top',
                         distance: 6,
-                        offset: [-8, 0],
-                        align: 'right',
+                        align: 'center',
                         color: '#475569',
                         fontSize: 11,
                         fontWeight: 700,
@@ -1737,7 +1744,7 @@
                         formatter: p => {
                             const val = prevTotals[p.dataIndex];
                             if (!val || val <= 0) return '';
-                            return dataField === '지상비' ? formatCompactWon(val) : formatNum(val);
+                            return dataField === '지상비' ? formatCompactWon(val) : formatNum(val) + '명';
                         }
                     },
                     data: partners.map((_, i) => (prevTotals[i] > 0 ? 0.0001 : 0))
@@ -1756,21 +1763,20 @@
                         show: true,
                         position: 'top',
                         distance: 6,
-                        offset: [8, 0],
-                        align: 'left',
+                        align: 'center',
                         color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
                         fontSize: 11,
                         fontWeight: 800,
                         fontFamily: 'Pretendard, sans-serif',
                         backgroundColor: dataField === '인원' ? 'rgba(219, 234, 254, 0.95)' : 'rgba(237, 233, 254, 0.95)',
-                        borderColor: dataField === '인원' ? '#bfdbfe' : '#ddd6fe',
+                        borderColor: dataField === '인원' ? '#93c5fd' : '#c4b5fd',
                         borderWidth: 1,
                         borderRadius: 4,
                         padding: [2, 6],
                         formatter: p => {
                             const val = currTotals[p.dataIndex];
                             if (!val || val <= 0) return '';
-                            return dataField === '지상비' ? formatCompactWon(val) : formatNum(val);
+                            return dataField === '지상비' ? formatCompactWon(val) : formatNum(val) + '명';
                         }
                     },
                     data: partners.map((_, i) => (currTotals[i] > 0 ? 0.0001 : 0))
@@ -1878,7 +1884,7 @@
                     grid: {
                         left: '3%',
                         right: '4%',
-                        top: '60px',
+                        top: '70px',
                         bottom: needsZoom ? '70px' : '45px',
                         containLabel: true
                     },
