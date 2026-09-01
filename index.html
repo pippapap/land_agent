@@ -1647,27 +1647,7 @@
                             borderWidth: 1.5,
                             borderRadius: [2, 2, 0, 0]
                         },
-                        label: {
-                            show: true,
-                            position: 'left',
-                            align: 'center',
-                            color: prevShade.bg,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            lineHeight: 14,
-                            fontFamily: 'Pretendard, sans-serif',
-                            formatter: p => {
-                                if (!p.value || p.value <= 0) return '';
-                                const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
-                                if (dataField === '인원') {
-                                    if (p.value >= 5) return `${r}\n${valStr}`;
-                                    return '';
-                                } else {
-                                    if (p.value >= 2000000) return `${r}\n${valStr}`;
-                                    return '';
-                                }
-                            }
-                        },
+                        label: { show: false },
                         data: partners.map(p => {
                             const match = prevArray.find(d => d.협력사 === p && d.지역 === r);
                             return match ? match[dataField] : 0;
@@ -1686,27 +1666,7 @@
                             borderWidth: 1.5,
                             borderRadius: [3, 3, 0, 0]
                         },
-                        label: {
-                            show: true,
-                            position: 'right',
-                            align: 'center',
-                            color: currShade.bg,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            lineHeight: 14,
-                            fontFamily: 'Pretendard, sans-serif',
-                            formatter: p => {
-                                if (!p.value || p.value <= 0) return '';
-                                const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
-                                if (dataField === '인원') {
-                                    if (p.value >= 5) return `${r}\n${valStr}`;
-                                    return '';
-                                } else {
-                                    if (p.value >= 2000000) return `${r}\n${valStr}`;
-                                    return '';
-                                }
-                            }
-                        },
+                        label: { show: false },
                         data: partners.map(p => {
                             const match = currArray.find(d => d.협력사 === p && d.지역 === r);
                             return match ? match[dataField] : 0;
@@ -1892,11 +1852,11 @@
                         textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
                     },
                     grid: {
-                        left: '12%',
-                        right: '12%',
+                        left: '8px',
+                        right: '8px',
                         top: '70px',
                         bottom: needsZoom ? '70px' : '45px',
-                        containLabel: false
+                        containLabel: true
                     },
                     barCategoryGap: '40%',
                     xAxis: {
