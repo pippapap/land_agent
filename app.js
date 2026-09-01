@@ -137,6 +137,8 @@ function changeTeam(tName, el) {
     el.classList.add('active');
     document.getElementById('currentTeamTitle').innerText = (tName === 'all') ? '전체' : tName;
     applyFilter();
+    // 탭(팀) 이동 시 페이지 최상단으로 스크롤 초기화
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function setupEventListeners() {
