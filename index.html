@@ -385,9 +385,9 @@
             height: 480px;
         }
 
-        /* 팀별 탭 협력사 차트는 높이 더 확보 */
+        /* 팀별 탭 협력사 차트는 레이블 펼침 공간을 위해 높이 충분히 확보 */
         .chart-full .chart {
-            height: 520px;
+            height: 580px;
         }
 
         /* Table */
@@ -1116,10 +1116,12 @@
 
         async function fetchJsonSafe(url) {
             try {
-                let response = await fetch(url);
+                // 브라우저 캐시 무효화 (JSON 파일 추가/삭제/수정 시 즉시 최신 상태 반영)
+                const cacheBuster = (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                let response = await fetch(url + cacheBuster, { cache: 'no-store' });
                 if (!response.ok) {
                     const encoded = encodeURI(url);
-                    if (encoded !== url) response = await fetch(encoded);
+                    if (encoded !== url) response = await fetch(encoded + cacheBuster, { cache: 'no-store' });
                 }
                 if (!response.ok) {
                     console.warn('[fetchJsonSafe] HTTP ' + response.status + ' 에러:', url);
@@ -1159,11 +1161,12 @@
                 rawData = [];
 
                 if (manifest && Array.isArray(manifest)) {
-                    // 2. 각 파일 순서대로 fetch
+                    // 2. 각 파일 순서대로 fetch (존재하는 유효 데이터만 반영)
                     for (const entry of manifest) {
+                        if (!entry || !entry.file) continue;
                         let fileData = await fetchJsonSafe(`./data/${entry.file}`);
                         if (!fileData) fileData = await fetchJsonSafe(`./${entry.file}`);
-                        if (fileData && Array.isArray(fileData)) {
+                        if (fileData && Array.isArray(fileData) && fileData.length > 0) {
                             fileData.forEach(d => { d.월 = entry.label; });
                             rawData = rawData.concat(fileData);
                         }
@@ -1690,13 +1693,13 @@
                     // 당월 색상을 맵에 저장 (툴팁 팝업에서 사용)
                     currColorMap[r] = currShade.bg;
 
-                    // 이전 데이터 스택 (회색 음영 계열 - 막대 좌측 left에 지역명+수치 표기 및 지시선 연결)
+                    // 이전 데이터 스택 (회색 음영 계열 - 막대 좌측 left에 단일행 배지로 지역명+수치 표기 및 지시선 연결)
                     series.push({
                         name: `${r} (${prevLegend})`,
                         stack: prevLegend,
                         type: 'bar',
                         barGap: '12%',
-                        barMaxWidth: 48,
+                        barMaxWidth: 44,
                         itemStyle: {
                             color: prevShade.bg,
                             borderColor: '#ffffff',
@@ -1706,28 +1709,33 @@
                         label: {
                             show: true,
                             position: 'left',
-                            distance: 8,
+                            distance: 10,
                             align: 'right',
                             verticalAlign: 'middle',
-                            color: '#475569',
+                            color: '#334155',
                             fontSize: 10,
                             fontWeight: 700,
-                            lineHeight: 13,
                             fontFamily: 'Pretendard, sans-serif',
+                            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                            borderColor: '#cbd5e1',
+                            borderWidth: 0.8,
+                            borderRadius: 3,
+                            padding: [2, 5],
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
-                                return `${r}\n${valStr}`;
+                                return `${r} ${valStr}`;
                             }
                         },
                         labelLayout: {
                             hideOverlap: false,
-                            moveOverlap: 'shiftY'
+                            moveOverlap: 'shiftY',
+                            dx: -4
                         },
                         labelLine: {
                             show: true,
                             showAbove: true,
-                            length2: 6,
+                            length2: 8,
                             minTurnAngle: 60,
                             lineStyle: {
                                 color: '#94a3b8',
@@ -1742,12 +1750,12 @@
                         })
                     });
 
-                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 우측 right에 지역명+수치 표기 및 지시선 연결)
+                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 우측 right에 단일행 배지로 지역명+수치 표기 및 지시선 연결)
                     series.push({
                         name: `${r} (${currentMonthDef})`,
                         stack: currentMonthDef,
                         type: 'bar',
-                        barMaxWidth: 48,
+                        barMaxWidth: 44,
                         itemStyle: {
                             color: currShade.bg,
                             borderColor: '#ffffff',
@@ -1757,28 +1765,33 @@
                         label: {
                             show: true,
                             position: 'right',
-                            distance: 8,
+                            distance: 10,
                             align: 'left',
                             verticalAlign: 'middle',
                             color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
                             fontSize: 10,
                             fontWeight: 700,
-                            lineHeight: 13,
                             fontFamily: 'Pretendard, sans-serif',
+                            backgroundColor: dataField === '인원' ? 'rgba(239, 246, 255, 0.95)' : 'rgba(250, 245, 255, 0.95)',
+                            borderColor: dataField === '인원' ? '#bfdbfe' : '#ddd6fe',
+                            borderWidth: 0.8,
+                            borderRadius: 3,
+                            padding: [2, 5],
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
-                                return `${r}\n${valStr}`;
+                                return `${r} ${valStr}`;
                             }
                         },
                         labelLayout: {
                             hideOverlap: false,
-                            moveOverlap: 'shiftY'
+                            moveOverlap: 'shiftY',
+                            dx: 4
                         },
                         labelLine: {
                             show: true,
                             showAbove: true,
-                            length2: 6,
+                            length2: 8,
                             minTurnAngle: 60,
                             lineStyle: {
                                 color: dataField === '인원' ? '#93c5fd' : '#c4b5fd',
