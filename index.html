@@ -528,6 +528,98 @@
             border-radius: 3px;
         }
 
+        /* 사분면(Quadrant) 배지 스타일 */
+        .quadrant-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1.25;
+            white-space: nowrap;
+            border-width: 1px;
+            border-style: solid;
+            letter-spacing: -0.02em;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 🟢 성과 우수: 지상비 ↓ / 인원 ↑ (초록색 계열) */
+        .quadrant-badge.q-excellent {
+            background-color: #dcfce7;
+            color: #15803d;
+            border-color: #86efac;
+        }
+
+        /* 🔵 효율 우수: 지상비 ↓ / 인원 ↓ (파란색/하늘색 계열) */
+        .quadrant-badge.q-efficient {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border-color: #7dd3fc;
+        }
+
+        /* 🟠 개선 필요: 지상비 ↑ / 인원 ↑ (주황색 계열) */
+        .quadrant-badge.q-warning {
+            background-color: #ffedd5;
+            color: #c2410c;
+            border-color: #fdba74;
+        }
+
+        /* 🔴 성과 부진: 지상비 ↑ / 인원 ↓ (빨간색 계열) */
+        .quadrant-badge.q-poor {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border-color: #fca5a5;
+        }
+
+        /* 사분면 콤보박스 및 헤더 컨트롤 */
+        .quadrant-control-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quadrant-select-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 2px 8px 2px 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .quadrant-select-box label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-navy);
+            white-space: nowrap;
+        }
+
+        .quadrant-select {
+            border: none;
+            background: transparent;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 6px 4px;
+            outline: none;
+            cursor: pointer;
+            max-width: 480px;
+        }
+
+        .quadrant-select option {
+            font-weight: 500;
+            padding: 4px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
         /* Password Overlay */
         .password-overlay {
             position: fixed;
@@ -743,9 +835,21 @@
             <!-- 하단 상세 테이블 -->
             <div class="section-header">
                 <h3 class="section-label">협력사별 수배현황</h3>
-                <div class="table-view-toggles">
-                    <button class="view-btn" id="viewModeList">전체</button>
-                    <button class="view-btn active" id="viewModeGroup">지역별</button>
+                <div class="quadrant-control-wrap">
+                    <div class="quadrant-select-box">
+                        <label for="quadrantFilterSelect">🧭 협력사 사분면 안내/필터:</label>
+                        <select id="quadrantFilterSelect" class="quadrant-select">
+                            <option value="all">📊 전체 협력사 (사분면 기준 전체 보기)</option>
+                            <option value="Q1">🟢 성과 우수(지상비 ↓ / 인원 ↑) → 송출인원 높고 인당 지상비 낮음 (성과·효율 우수)</option>
+                            <option value="Q2">🔵 효율 우수(지상비 ↓ / 인원 ↓) → 송출인원 낮지만 인당 지상비 낮음 (비용 효율 우수)</option>
+                            <option value="Q3">🟠 개선 필요(지상비 ↑ / 인원 ↑) → 송출인원 높지만 인당 지상비 높아 비용 절감 필요</option>
+                            <option value="Q4">🔴 성과 부진(지상비 ↑ / 인원 ↓) → 송출인원 낮고 인당 지상비 높아 성과·효율 부진</option>
+                        </select>
+                    </div>
+                    <div class="table-view-toggles">
+                        <button class="view-btn" id="viewModeList">전체</button>
+                        <button class="view-btn active" id="viewModeGroup">지역별</button>
+                    </div>
                 </div>
             </div>
             <section class="table-section glass-panel">
@@ -823,6 +927,7 @@
         // === 전역 데이터 관리 ===
         let rawData = [];
         let selectedTeam = 'all';
+        let selectedQuadrant = 'all'; // 'all' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
         let currentMonthDef = '';
         let charts = {};
 
@@ -1007,6 +1112,14 @@
                 document.getElementById('viewModeList').classList.remove('active');
                 applyFilter();
             });
+
+            const qSelect = document.getElementById('quadrantFilterSelect');
+            if (qSelect) {
+                qSelect.addEventListener('change', (e) => {
+                    selectedQuadrant = e.target.value;
+                    applyFilter();
+                });
+            }
         }
 
         const formatNum = (num) => new Intl.NumberFormat('ko-KR').format(num);
@@ -1336,6 +1449,8 @@
                         type: 'bar',
                         stack: prevLegend,
                         silent: true,
+                        tooltip: { show: false },
+                        legendHoverLink: false,
                         itemStyle: { color: '#94a3b8', borderColor: '#64748b', borderWidth: 1 },
                         label: { show: false },
                         data: partners.map(() => 0)
@@ -1345,6 +1460,8 @@
                         type: 'bar',
                         stack: currentMonthDef,
                         silent: true,
+                        tooltip: { show: false },
+                        legendHoverLink: false,
                         itemStyle: { color: dataField === '인원' ? '#2563eb' : '#7c3aed' },
                         label: { show: false },
                         data: partners.map(() => 0)
@@ -1364,7 +1481,7 @@
                     // 당월 색상을 맵에 저장 (툴팁 팝업에서 사용)
                     currColorMap[r] = currShade.bg;
 
-                    // 이전 데이터 스택 (회색 음영 계열)
+                    // 이전 데이터 스택 (회색 음영 계열 - 막대 안에 지역명+수치 표기)
                     series.push({
                         name: `${r} (${prevLegend})`,
                         stack: prevLegend,
@@ -1381,16 +1498,22 @@
                             show: true,
                             position: 'inside',
                             color: prevShade.text,
-                            fontSize: 11,
-                            fontWeight: 600,
+                            fontSize: 10,
+                            fontWeight: 700,
                             fontFamily: 'Pretendard, sans-serif',
-                            // 막대 세그먼트가 글씨보다 작으면 레이블 제외
+                            textShadowColor: prevShade.text === '#ffffff' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)',
+                            textShadowBlur: 2,
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
+                                const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 if (dataField === '인원') {
-                                    return p.value >= 30 ? formatNum(p.value) : '';
+                                    if (p.value >= 15) return `${r}\n${valStr}`;
+                                    if (p.value >= 5) return r;
+                                    return '';
                                 } else {
-                                    return p.value >= 20000000 ? formatCompactWon(p.value) : '';
+                                    if (p.value >= 10000000) return `${r}\n${valStr}`;
+                                    if (p.value >= 2000000) return r;
+                                    return '';
                                 }
                             }
                         },
@@ -1400,7 +1523,7 @@
                         })
                     });
 
-                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색)
+                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 안에 지역명+수치 선명 표기)
                     series.push({
                         name: `${r} (${currentMonthDef})`,
                         stack: currentMonthDef,
@@ -1416,18 +1539,22 @@
                             show: true,
                             position: 'inside',
                             color: currShade.text,
-                            fontSize: 11,
-                            fontWeight: 'bold',
+                            fontSize: 10,
+                            fontWeight: 700,
                             fontFamily: 'Pretendard, sans-serif',
-                            textShadowColor: currShade.text === '#ffffff' ? 'rgba(0, 0, 0, 0.45)' : 'transparent',
+                            textShadowColor: currShade.text === '#ffffff' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
                             textShadowBlur: 2,
-                            // 막대 세그먼트가 글씨보다 작으면 레이블 제외
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
+                                const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 if (dataField === '인원') {
-                                    return p.value >= 30 ? formatNum(p.value) : '';
+                                    if (p.value >= 15) return `${r}\n${valStr}`;
+                                    if (p.value >= 5) return r;
+                                    return '';
                                 } else {
-                                    return p.value >= 20000000 ? formatCompactWon(p.value) : '';
+                                    if (p.value >= 10000000) return `${r}\n${valStr}`;
+                                    if (p.value >= 2000000) return r;
+                                    return '';
                                 }
                             }
                         },
@@ -1454,10 +1581,12 @@
 
                 // 이전 막대 최상단 총합 레이블 (투명 더미 슬라이스로 위치 고정)
                 series.push({
-                    name: '__prev_total_label__',
+                    name: '',
                     type: 'bar',
                     stack: prevLegend,
                     silent: true,
+                    tooltip: { show: false },
+                    legendHoverLink: false,
                     itemStyle: { color: 'transparent', borderColor: 'transparent' },
                     label: {
                         show: true,
@@ -1483,10 +1612,12 @@
 
                 // 당월 막대 최상단 총합 레이블 (투명 더미 슬라이스로 위치 고정)
                 series.push({
-                    name: '__curr_total_label__',
+                    name: '',
                     type: 'bar',
                     stack: currentMonthDef,
                     silent: true,
+                    tooltip: { show: false },
+                    legendHoverLink: false,
                     itemStyle: { color: 'transparent', borderColor: 'transparent' },
                     label: {
                         show: true,
@@ -1546,10 +1677,12 @@
                             // 당월 지역별 색상 맵 (클로저로 미리 계산된 값 사용)
 
                             params.forEach(p => {
+                                if (!p || !p.seriesName || p.seriesName === '' || p.seriesName.includes('total_label')) return;
                                 if (p.value > 0) {
                                     const isPrev = p.seriesName.includes(`(${prevLegend})`);
                                     const isCurr = p.seriesName.includes(`(${currentMonthDef})`);
                                     const regName = p.seriesName.split(' (')[0];
+                                    if (!regName) return;
 
                                     if (!regionBreakdown[regName]) regionBreakdown[regName] = { prev: 0, curr: 0 };
                                     if (isPrev) {
@@ -1676,12 +1809,62 @@
             setStackedChart(charts.chart2, '지상비');
         }
 
+        function computeQuadrantData(dataArray) {
+            if (!dataArray || dataArray.length === 0) return [];
+            const totalPers = dataArray.reduce((s, d) => s + (d.인원 || 0), 0);
+            const totalCost = dataArray.reduce((s, d) => s + (d.지상비 || 0), 0);
+            const avgPers = totalPers / dataArray.length;
+            const avgUnitCost = totalPers > 0 ? (totalCost / totalPers) : (dataArray.reduce((s, d) => s + (d['인당 지상비'] || 0), 0) / dataArray.length);
+
+            return dataArray.map(d => {
+                const pers = d.인원 || 0;
+                const cost = d.지상비 || 0;
+                const unitCost = d['인당 지상비'] || (pers > 0 ? Math.round(cost / pers) : 0);
+
+                const isHighPers = (pers >= avgPers);
+                const isLowCost = (unitCost <= avgUnitCost);
+
+                let qCode, qText, qClass, qOrder;
+
+                if (isHighPers && isLowCost) {
+                    qCode = 'Q1';
+                    qText = '성과 우수(지상비 ↓ / 인원 ↑)';
+                    qClass = 'q-excellent';
+                    qOrder = 1;
+                } else if (!isHighPers && isLowCost) {
+                    qCode = 'Q2';
+                    qText = '효율 우수(지상비 ↓ / 인원 ↓)';
+                    qClass = 'q-efficient';
+                    qOrder = 2;
+                } else if (isHighPers && !isLowCost) {
+                    qCode = 'Q3';
+                    qText = '개선 필요(지상비 ↑ / 인원 ↑)';
+                    qClass = 'q-warning';
+                    qOrder = 3;
+                } else {
+                    qCode = 'Q4';
+                    qText = '성과 부진(지상비 ↑ / 인원 ↓)';
+                    qClass = 'q-poor';
+                    qOrder = 4;
+                }
+
+                return {
+                    ...d,
+                    '인당 지상비': unitCost,
+                    _qCode: qCode,
+                    _qText: qText,
+                    _qClass: qClass,
+                    _qOrder: qOrder
+                };
+            });
+        }
+
         function handleSort(colName) {
             if (sortCol === colName) {
                 sortDesc = !sortDesc;
             } else {
                 sortCol = colName;
-                sortDesc = true; // 새로운 열 클릭 시 기본 내림차순(많은 순)
+                sortDesc = true; // 새로운 열 클릭 시 기본 내림차순
             }
             applyFilter();
         }
@@ -1692,7 +1875,8 @@
             { key: '지역', name: '지역' },
             { key: '인원', name: '송출 인원', align: 'right' },
             { key: '지상비', name: '지상비', align: 'right' },
-            { key: '인당 지상비', name: '인당 지상비', align: 'right' }
+            { key: '인당 지상비', name: '인당 지상비', align: 'right' },
+            { key: '_qOrder', name: '협력사 사분면', align: 'center' }
         ];
 
         function renderTable(dataArray) {
@@ -1700,7 +1884,15 @@
             const tBody = document.getElementById('tableBody');
             const showTeam = (selectedTeam === 'all');
 
-            document.getElementById('dataCount').innerText = `${dataArray.length}건 탑재됨`;
+            // 1. 전체 데이터 기준으로 사분면 평가 계산
+            let enrichedArray = computeQuadrantData(dataArray);
+
+            // 2. 콤보박스 사분면 필터 적용
+            if (selectedQuadrant && selectedQuadrant !== 'all') {
+                enrichedArray = enrichedArray.filter(d => d._qCode === selectedQuadrant);
+            }
+
+            document.getElementById('dataCount').innerText = `${enrichedArray.length}건 탑재됨`;
             tHeadRow.innerHTML = ''; tBody.innerHTML = '';
 
             tableCols.forEach(col => {
@@ -1713,7 +1905,7 @@
                 tHeadRow.appendChild(th);
             });
 
-            let displayArray = [...dataArray];
+            let displayArray = [...enrichedArray];
 
             if (tableViewMode === 'list') {
                 // 지역별 최고 송출인원 맵 계산 (동일 지역 내 1위 행 음영 표시용)
@@ -1749,7 +1941,8 @@
                         <td>${d.지역}</td>
                         <td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td>
                         <td class="text-right">${formatNum(d.지상비)}</td>
-                        <td class="text-right">${formatNum(d['인당 지상비'] || (d.인원 > 0 ? Math.round(d.지상비 / d.인원) : 0))}</td>`;
+                        <td class="text-right">${formatNum(d['인당 지상비'])}</td>
+                        <td class="text-center"><span class="quadrant-badge ${d._qClass}">${d._qText}</span></td>`;
                     tBody.appendChild(tr);
                 });
             } else if (tableViewMode === 'group') {
@@ -1789,7 +1982,7 @@
                     gRow.className = 'group-header-row';
                     const titleText = showTeam ? `[${g.team}] ${g.region}` : `[지역 구분] ${g.region}`;
                     const avgCost = g.totalPersonnel > 0 ? Math.round(g.totalCost / g.totalPersonnel) : 0;
-                    gRow.innerHTML = `<td colspan="${showTeam ? 6 : 5}">
+                    gRow.innerHTML = `<td colspan="${showTeam ? 7 : 6}">
                         <strong>${titleText}</strong>
                         <span style="font-weight:normal; font-size:0.85rem; color:#64748b; margin-left:10px;">
                             (지역 총 송출: <strong style="color:var(--accent-navy);">${formatNum(g.totalPersonnel)}명</strong> / 지상비: <strong>${formatNum(g.totalCost)}원</strong> / 평균 인당: <strong>${formatNum(avgCost)}원</strong>)
@@ -1824,7 +2017,8 @@
                             <td style="color:var(--text-secondary)">${d.지역}</td>
                             <td class="text-right" style="color:var(--accent-cyan);font-weight:700">${formatNum(d.인원)}</td>
                             <td class="text-right">${formatNum(d.지상비)}</td>
-                            <td class="text-right">${formatNum(d['인당 지상비'] || (d.인원 > 0 ? Math.round(d.지상비 / d.인원) : 0))}</td>`;
+                            <td class="text-right">${formatNum(d['인당 지상비'])}</td>
+                            <td class="text-center"><span class="quadrant-badge ${d._qClass}">${d._qText}</span></td>`;
                         tBody.appendChild(tr);
                     });
                 });
