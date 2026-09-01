@@ -342,7 +342,8 @@ const tableCols = [
     { key: '지역', name: '지역' },
     { key: '인원', name: '송출 인원', align: 'right' },
     { key: '지상비', name: '지상비', align: 'right' },
-    { key: '인당 지상비', name: '인당 지상비', align: 'right' }
+    { key: '인당 지상비', name: '인당 지상비', align: 'right' },
+    { key: '_qOrder', name: '성과 구분', align: 'center' }
 ];
 
 function renderTable(dataArray) {

@@ -44,6 +44,11 @@
             font-family: inherit;
         }
 
+        html {
+            scroll-behavior: smooth;
+            scroll-snap-type: y proximity;
+        }
+
         body {
             background-color: var(--bg-color-main);
             color: var(--text-primary);
@@ -55,6 +60,14 @@
             background-attachment: fixed;
             line-height: 1.6;
             overflow-x: hidden;
+        }
+
+        /* Scroll Snap Targets (박스별 자연스러운 스냅 정렬) */
+        .topbar,
+        .section-header,
+        .chart-container {
+            scroll-snap-align: start;
+            scroll-margin-top: 24px;
         }
 
         .glass-panel {
@@ -1446,6 +1459,9 @@
                             label: {
                                 show: true,
                                 position: 'top',
+                                distance: 5,
+                                offset: [-6, 0],
+                                align: 'right',
                                 color: '#64748b',
                                 fontSize: 11,
                                 fontWeight: 600,
@@ -1467,6 +1483,9 @@
                             label: {
                                 show: true,
                                 position: 'top',
+                                distance: 5,
+                                offset: [6, 0],
+                                align: 'left',
                                 color: field === '인원' ? '#1d4ed8' : '#7c3aed',
                                 fontSize: 11,
                                 fontWeight: 700,
@@ -1702,6 +1721,8 @@
                         show: true,
                         position: 'top',
                         distance: 6,
+                        offset: [-8, 0],
+                        align: 'right',
                         color: '#475569',
                         fontSize: 11,
                         fontWeight: 700,
@@ -1733,6 +1754,8 @@
                         show: true,
                         position: 'top',
                         distance: 6,
+                        offset: [8, 0],
+                        align: 'left',
                         color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
                         fontSize: 11,
                         fontWeight: 800,
@@ -1986,7 +2009,7 @@
             { key: '인원', name: '송출 인원', align: 'right' },
             { key: '지상비', name: '지상비', align: 'right' },
             { key: '인당 지상비', name: '인당 지상비', align: 'right' },
-            { key: '_qOrder', name: '협력사 사분면', align: 'center' }
+            { key: '_qOrder', name: '성과 구분', align: 'center' }
         ];
 
         function renderTable(dataArray) {

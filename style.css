@@ -17,7 +17,10 @@
     --sidebar-width: 250px;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y proximity;
+}
 
 body {
     background-color: var(--bg-color-main);
@@ -30,6 +33,14 @@ body {
     background-attachment: fixed;
     line-height: 1.6;
     overflow-x: hidden;
+}
+
+/* Scroll Snap Targets (박스별 자연스러운 스냅 정렬) */
+.topbar,
+.section-header,
+.chart-container {
+    scroll-snap-align: start;
+    scroll-margin-top: 24px;
 }
 
 .glass-panel {
