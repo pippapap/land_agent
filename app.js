@@ -286,20 +286,58 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
     const prevLegend = prevNameStr || '비교 없음';
     const palette = ['#1d4ed8', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#dc2626', '#14b8a6', '#6366f1'];
 
+    // 현재월 막대의 최상단 세그먼트를 찾아 총계 라벨을 표시하기 위한 헬퍼
+    const buildStackTopLabels = (dataField, stackName, dataArray) => {
+        // 협력사별 총계 계산
+        const totals = partners.map(p =>
+            regions.reduce((sum, r) => {
+                const match = dataArray.find(d => d.협력사 === p && d.지역 === r);
+                return sum + (match ? (match[dataField] || 0) : 0);
+            }, 0)
+        );
+        return totals;
+    };
+
     const getSeries = (dataField) => {
         const series = [];
+        // 현재월 총계 (막대 위 라벨용)
+        const currTotals = buildStackTopLabels(dataField, currentMonthDef, currArray);
+        const prevTotals = buildStackTopLabels(dataField, prevLegend, prevArray);
+
         regions.forEach((r, idx) => {
             const color = palette[idx % palette.length];
+            const isLastRegion = (idx === regions.length - 1);
+
             series.push({
                 name: r, stack: prevLegend, type: 'bar', barGap: '5%',
                 itemStyle: { color, opacity: 0.35 },
-                label: { show: true, position: 'inside', color: '#1e293b', fontSize: 13, formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
+                label: {
+                    show: isLastRegion,
+                    position: 'top',
+                    color: '#64748b',
+                    fontSize: 11,
+                    fontWeight: '600',
+                    formatter: (p) => {
+                        const total = prevTotals[p.dataIndex];
+                        return total > 0 ? formatNum(total) : '';
+                    }
+                },
                 data: partners.map(p => { const match = prevArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
             });
             series.push({
                 name: r, stack: currentMonthDef, type: 'bar',
                 itemStyle: { color, opacity: 1 },
-                label: { show: true, position: 'inside', color: '#fff', fontSize: 13, fontWeight: 'bold', formatter: p => p.value > 0 ? `${r}\n${formatNum(p.value)}` : '' },
+                label: {
+                    show: isLastRegion,
+                    position: 'top',
+                    color: '#1e3a8a',
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    formatter: (p) => {
+                        const total = currTotals[p.dataIndex];
+                        return total > 0 ? `${formatNum(total)}명` : '';
+                    }
+                },
                 data: partners.map(p => { const match = currArray.find(d => d.협력사 === p && d.지역 === r); return match ? match[dataField] : 0; })
             });
         });
@@ -307,6 +345,7 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
     };
 
     const setStackedChart = (chartInstance, field) => {
+        const isCost = (field === '지상비');
         chartInstance.setOption({
             tooltip: {
                 trigger: 'axis', axisPointer: { type: 'shadow' },
@@ -317,13 +356,22 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                     params.forEach(p => {
                         if (p.value > 0) { if (p.seriesIndex % 2 === 0) prevTotal += p.value; else currTotal += p.value; }
                     });
-                    return `<strong>[${axisValue}]</strong><br/>▷ ${prevLegend}: ${formatNum(prevTotal)}<br/>▶ ${currentMonthDef}: ${formatNum(currTotal)}`;
+                    const fmt = v => isCost ? `${formatNum(v)}원` : `${formatNum(v)}명`;
+                    return `<strong>[${axisValue}]</strong><br/>▷ ${prevLegend}: ${fmt(prevTotal)}<br/>▶ ${currentMonthDef}: ${fmt(currTotal)}`;
                 }
             },
             legend: { show: false },
-            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-            xAxis: { type: 'category', data: partners, axisLabel: { color: colors.textMuted, interval: 0 } },
-            yAxis: { type: 'value', splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } } },
+            grid: { left: '8px', right: '8px', bottom: '40px', top: '48px', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: partners,
+                axisLabel: { color: colors.textMuted, interval: 0, rotate: 0, fontSize: 12 }
+            },
+            yAxis: {
+                type: 'value',
+                splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } },
+                axisLabel: { formatter: v => isCost ? (v >= 1000000 ? (v/1000000).toFixed(0)+'M' : formatNum(v)) : formatNum(v) }
+            },
             series: getSeries(field)
         }, true);
     };
