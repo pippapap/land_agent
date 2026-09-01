@@ -1620,7 +1620,7 @@
                     // 당월 색상을 맵에 저장 (툴팁 팝업에서 사용)
                     currColorMap[r] = currShade.bg;
 
-                    // 이전 데이터 스택 (회색 음영 계열 - 막대 안에 지역명+수치 표기)
+                    // 이전 데이터 스택 (회색 음영 계열 - 막대 왼쪽 바깥에 지역명+수치 표기)
                     series.push({
                         name: `${r} (${prevLegend})`,
                         stack: prevLegend,
@@ -1635,23 +1635,19 @@
                         },
                         label: {
                             show: true,
-                            position: 'inside',
-                            color: prevShade.text,
+                            position: 'left',
+                            color: prevShade.bg,
                             fontSize: 10,
                             fontWeight: 700,
                             fontFamily: 'Pretendard, sans-serif',
-                            textShadowColor: prevShade.text === '#ffffff' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)',
-                            textShadowBlur: 2,
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 if (dataField === '인원') {
-                                    if (p.value >= 15) return `${r}\n${valStr}`;
-                                    if (p.value >= 5) return r;
+                                    if (p.value >= 5) return `${r} ${valStr}`;
                                     return '';
                                 } else {
-                                    if (p.value >= 10000000) return `${r}\n${valStr}`;
-                                    if (p.value >= 2000000) return r;
+                                    if (p.value >= 2000000) return `${r} ${valStr}`;
                                     return '';
                                 }
                             }
@@ -1662,7 +1658,7 @@
                         })
                     });
 
-                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 안에 지역명+수치 선명 표기)
+                    // 당월 데이터 스택 (단일 색상 계열 내 진하기 = 규모 배색 - 막대 오른쪽 바깥에 지역명+수치 표기)
                     series.push({
                         name: `${r} (${currentMonthDef})`,
                         stack: currentMonthDef,
@@ -1676,23 +1672,19 @@
                         },
                         label: {
                             show: true,
-                            position: 'inside',
-                            color: currShade.text,
+                            position: 'right',
+                            color: currShade.bg,
                             fontSize: 10,
                             fontWeight: 700,
                             fontFamily: 'Pretendard, sans-serif',
-                            textShadowColor: currShade.text === '#ffffff' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-                            textShadowBlur: 2,
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 if (dataField === '인원') {
-                                    if (p.value >= 15) return `${r}\n${valStr}`;
-                                    if (p.value >= 5) return r;
+                                    if (p.value >= 5) return `${r} ${valStr}`;
                                     return '';
                                 } else {
-                                    if (p.value >= 10000000) return `${r}\n${valStr}`;
-                                    if (p.value >= 2000000) return r;
+                                    if (p.value >= 2000000) return `${r} ${valStr}`;
                                     return '';
                                 }
                             }
@@ -1882,11 +1874,11 @@
                         textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
                     },
                     grid: {
-                        left: '3%',
-                        right: '4%',
+                        left: '12%',
+                        right: '12%',
                         top: '70px',
                         bottom: needsZoom ? '70px' : '45px',
-                        containLabel: true
+                        containLabel: false
                     },
                     barCategoryGap: '40%',
                     xAxis: {
