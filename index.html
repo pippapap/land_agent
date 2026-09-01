@@ -1636,18 +1636,20 @@
                         label: {
                             show: true,
                             position: 'left',
+                            align: 'center',
                             color: prevShade.bg,
                             fontSize: 10,
                             fontWeight: 700,
+                            lineHeight: 14,
                             fontFamily: 'Pretendard, sans-serif',
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 if (dataField === '인원') {
-                                    if (p.value >= 5) return `${r} ${valStr}`;
+                                    if (p.value >= 5) return `${r}\n${valStr}`;
                                     return '';
                                 } else {
-                                    if (p.value >= 2000000) return `${r} ${valStr}`;
+                                    if (p.value >= 2000000) return `${r}\n${valStr}`;
                                     return '';
                                 }
                             }
@@ -1673,18 +1675,20 @@
                         label: {
                             show: true,
                             position: 'right',
+                            align: 'center',
                             color: currShade.bg,
                             fontSize: 10,
                             fontWeight: 700,
+                            lineHeight: 14,
                             fontFamily: 'Pretendard, sans-serif',
                             formatter: p => {
                                 if (!p.value || p.value <= 0) return '';
                                 const valStr = dataField === '지상비' ? formatCompactWon(p.value) : `${formatNum(p.value)}명`;
                                 if (dataField === '인원') {
-                                    if (p.value >= 5) return `${r} ${valStr}`;
+                                    if (p.value >= 5) return `${r}\n${valStr}`;
                                     return '';
                                 } else {
-                                    if (p.value >= 2000000) return `${r} ${valStr}`;
+                                    if (p.value >= 2000000) return `${r}\n${valStr}`;
                                     return '';
                                 }
                             }
