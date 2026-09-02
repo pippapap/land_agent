@@ -1680,6 +1680,91 @@
                     }
                 );
 
+                // ─────────────────────────────────────────────────────────────
+                // 각 협력사별 스택 슬라이스의 라벨 위치(dx, dy)를 겹침 없이 대각선 부채꼴로 자동 계산
+                // ─────────────────────────────────────────────────────────────
+                const computeStackLabelOffsets = (partnerName, dataArray, sortedRegionsList, isPrev) => {
+                    const activeItems = [];
+                    sortedRegionsList.forEach(reg => {
+                        const match = dataArray.find(d => d.협력사 === partnerName && d.지역 === reg);
+                        const val = match ? (match[dataField] || 0) : 0;
+                        if (val > 0) {
+                            activeItems.push({ region: reg, val: val });
+                        }
+                    });
+
+                    const n = activeItems.length;
+                    const offsets = {};
+                    if (n === 0) return offsets;
+
+                    const sign = isPrev ? -1 : 1;
+                    if (n === 1) {
+                        offsets[activeItems[0].region] = { dx: sign * 10, dy: 0 };
+                        return offsets;
+                    }
+
+                    // 누적 값 기반 각 슬라이스의 중심점(mid) 계산
+                    let cum = 0;
+                    const mids = [];
+                    activeItems.forEach(item => {
+                        const mid = cum + item.val / 2.0;
+                        cum += item.val;
+                        mids.push({ region: item.region, val: item.val, mid: mid });
+                    });
+
+                    let maxTotal = 1;
+                    const allTotals = {};
+                    dataArray.forEach(d => { allTotals[d.협력사] = (allTotals[d.협력사] || 0) + (d[dataField] || 0); });
+                    Object.values(allTotals).forEach(v => { if (v > maxTotal) maxTotal = v; });
+                    maxTotal = Math.max(maxTotal * 1.15, 10);
+
+                    const H_GRID = 420.0;
+                    const scale = H_GRID / maxTotal;
+                    const MIN_GAP = 26.0; // 최소 26px 간격 확보 (라벨 박스 20px + 여백 6px)
+
+                    const y_pos = mids.map(m => m.mid * scale);
+                    const target_y = [...y_pos];
+
+                    // 전방 패스 (아래 -> 위)
+                    for (let i = 1; i < n; i++) {
+                        if (target_y[i] - target_y[i - 1] < MIN_GAP) {
+                            target_y[i] = target_y[i - 1] + MIN_GAP;
+                        }
+                    }
+
+                    // 후방 패스 (위 -> 아래)
+                    for (let i = n - 2; i >= 0; i--) {
+                        if (target_y[i + 1] - target_y[i] < MIN_GAP) {
+                            target_y[i] = target_y[i + 1] - MIN_GAP;
+                        }
+                    }
+
+                    // 중심점 보정
+                    const origCenter = (y_pos[0] + y_pos[n - 1]) / 2.0;
+                    const newCenter = (target_y[0] + target_y[n - 1]) / 2.0;
+                    const shiftCenter = origCenter - newCenter;
+                    for (let i = 0; i < n; i++) {
+                        target_y[i] += shiftCenter;
+                    }
+
+                    // dy, dx 계산
+                    for (let i = 0; i < n; i++) {
+                        const reg = mids[i].region;
+                        const dy_px = Math.round(-(target_y[i] - y_pos[i]));
+                        const dx_px = Math.round(sign * (10 + Math.abs(dy_px) * 0.95));
+                        offsets[reg] = { dx: dx_px, dy: dy_px };
+                    }
+
+                    return offsets;
+                };
+
+                const prevOffsetsMap = {};
+                const currOffsetsMap = {};
+                partners.forEach(p => {
+                    prevOffsetsMap[p] = computeStackLabelOffsets(p, prevArray, sortedRegionsPrev, true);
+                    currOffsetsMap[p] = computeStackLabelOffsets(p, currArray, sortedRegionsCurr, false);
+                });
+
                 // 지역별 스택 추가 (정렬된 순서대로 배색)
                 // 당월 색상 맵 (툴팁에서 참조하기 위해 클로저 외부에서 공유)
                 const currColorMap = {};
@@ -1727,40 +1812,23 @@
                                 return `${r} ${valStr}`;
                             }
                         },
-                        labelLayout: {
-                            hideOverlap: false,
-                            moveOverlap: 'shiftY'
-                        },
                         data: partners.map(p => {
                             const match = prevArray.find(d => d.협력사 === p && d.지역 === r);
                             const val = match ? match[dataField] : 0;
                             if (!val || val <= 0) {
                                 return { value: 0, label: { show: false }, labelLine: { show: false } };
                             }
-                            // 해당 협력사 내 활성 지역 목록 및 순위
-                            const activeRegions = sortedRegionsPrev.filter(reg => {
-                                const m = prevArray.find(d => d.협력사 === p && d.지역 === reg);
-                                return m && m[dataField] > 0;
-                            });
-                            const count = activeRegions.length;
-                            const rank = activeRegions.indexOf(r);
-                            let dx = -8, dy = 0;
-                            if (count > 1) {
-                                const mid = (count - 1) / 2;
-                                const step = rank - mid;
-                                dy = Math.round(step * 14); // 위아래로 넓게 펼침
-                                dx = Math.round(-8 - Math.abs(step) * 14); // 대각선으로 바깥쪽 확장
-                            }
+                            const off = prevOffsetsMap[p]?.[r] || { dx: -10, dy: 0 };
                             return {
                                 value: val,
                                 label: {
-                                    offset: [dx, dy]
+                                    offset: [off.dx, off.dy]
                                 },
                                 labelLine: {
                                     show: true,
                                     showAbove: true,
-                                    length: Math.max(8, Math.round(Math.abs(dx) * 0.7)),
-                                    length2: 6,
+                                    length: Math.max(10, Math.round(Math.abs(off.dx) * 0.75)),
+                                    length2: 8,
                                     minTurnAngle: 0,
                                     lineStyle: {
                                         color: '#94a3b8',
@@ -1805,40 +1873,23 @@
                                 return `${r} ${valStr}`;
                             }
                         },
-                        labelLayout: {
-                            hideOverlap: false,
-                            moveOverlap: 'shiftY'
-                        },
                         data: partners.map(p => {
                             const match = currArray.find(d => d.협력사 === p && d.지역 === r);
                             const val = match ? match[dataField] : 0;
                             if (!val || val <= 0) {
                                 return { value: 0, label: { show: false }, labelLine: { show: false } };
                             }
-                            // 해당 협력사 내 활성 지역 목록 및 순위
-                            const activeRegions = sortedRegionsCurr.filter(reg => {
-                                const m = currArray.find(d => d.협력사 === p && d.지역 === reg);
-                                return m && m[dataField] > 0;
-                            });
-                            const count = activeRegions.length;
-                            const rank = activeRegions.indexOf(r);
-                            let dx = 8, dy = 0;
-                            if (count > 1) {
-                                const mid = (count - 1) / 2;
-                                const step = rank - mid;
-                                dy = Math.round(step * 14); // 위아래로 넓게 펼침
-                                dx = Math.round(8 + Math.abs(step) * 14); // 대각선으로 바깥쪽 확장
-                            }
+                            const off = currOffsetsMap[p]?.[r] || { dx: 10, dy: 0 };
                             return {
                                 value: val,
                                 label: {
-                                    offset: [dx, dy]
+                                    offset: [off.dx, off.dy]
                                 },
                                 labelLine: {
                                     show: true,
                                     showAbove: true,
-                                    length: Math.max(8, Math.round(dx * 0.7)),
-                                    length2: 6,
+                                    length: Math.max(10, Math.round(off.dx * 0.75)),
+                                    length2: 8,
                                     minTurnAngle: 0,
                                     lineStyle: {
                                         color: dataField === '인원' ? '#3b82f6' : '#8b5cf6',
