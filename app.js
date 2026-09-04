@@ -1090,27 +1090,27 @@ function updatePieChart(dataArray) {
         graphic: [
             {
                 type: 'text',
-                left: '50%',
+                left: 'center',
                 top: '43%',
                 style: {
-                    text: `총 ${formatNum(totalVal)}명`,
+                    text: '총 송출 인원',
                     textAlign: 'center',
-                    fill: '#1e293b',
-                    fontSize: 15,
-                    fontWeight: 800,
+                    fill: '#64748b',
+                    fontSize: 12,
+                    fontWeight: 600,
                     fontFamily: 'Pretendard, sans-serif'
                 }
             },
             {
                 type: 'text',
-                left: '50%',
-                top: '52%',
+                left: 'center',
+                top: '51%',
                 style: {
-                    text: `1위: ${topItemName} (${topItemPct})`,
+                    text: `${formatNum(totalVal)}명`,
                     textAlign: 'center',
-                    fill: '#64748b',
-                    fontSize: 11,
-                    fontWeight: 600,
+                    fill: '#0f172a',
+                    fontSize: 19,
+                    fontWeight: 800,
                     fontFamily: 'Pretendard, sans-serif'
                 }
             }
@@ -1119,20 +1119,21 @@ function updatePieChart(dataArray) {
             {
                 name: pieTitle ? pieTitle.innerText : '송출 비중',
                 type: 'pie',
-                radius: ['45%', '72%'],
+                radius: ['52%', '76%'],
                 center: ['50%', '50%'],
                 avoidLabelOverlap: true,
-                itemStyle: { borderRadius: 6, borderColor: '#ffffff', borderWidth: 2 },
+                itemStyle: { borderRadius: 6, borderColor: '#ffffff', borderWidth: 2.5 },
                 label: {
-                    show: true,
-                    position: 'inside',
-                    formatter: p => p.percent >= 8 ? `${p.name}\n${p.percent}%` : '',
-                    color: '#ffffff',
-                    fontSize: 10,
-                    fontWeight: 800,
-                    lineHeight: 13,
-                    textBorderColor: 'rgba(0,0,0,0.5)',
-                    textBorderWidth: 1.5
+                    show: false
+                },
+                emphasis: {
+                    scale: true,
+                    scaleSize: 6,
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.2)'
+                    }
                 },
                 labelLine: { show: false },
                 data: pieData
@@ -1140,7 +1141,7 @@ function updatePieChart(dataArray) {
         ]
     }, true);
 
-    // 커스텀 HTML 범례 테이블 렌더링
+    // 커스텀 대시보드 표(테이블) 형태 범례 렌더링
     const legendList = document.getElementById('pieLegendList');
     if (legendList) {
         legendList.innerHTML = '';
@@ -1148,23 +1149,38 @@ function updatePieChart(dataArray) {
             const pct = totalVal > 0 ? ((item.value / totalVal) * 100).toFixed(1) : '0.0';
             const color = donutColors[idx % donutColors.length];
             const rankBadgeClass = idx === 0 ? 'pie-rank-1' : (idx === 1 ? 'pie-rank-2' : (idx === 2 ? 'pie-rank-3' : 'pie-rank-n'));
-            const barWidth = totalVal > 0 ? Math.round((item.value / totalVal) * 100) : 0;
+            const barWidth = totalVal > 0 ? Math.min(100, Math.round((item.value / totalVal) * 100)) : 0;
             const row = document.createElement('div');
             row.className = 'pie-legend-row';
             row.innerHTML = `
                 <div class="pie-legend-rank ${rankBadgeClass}">${idx + 1}</div>
-                <div class="pie-legend-info">
-                    <div class="pie-legend-name-row">
-                        <span class="pie-legend-dot" style="background:${color};"></span>
-                        <span class="pie-legend-name">${item.name}</span>
-                        <span class="pie-legend-pct">${pct}%</span>
-                    </div>
+                <div class="pie-legend-name-col">
+                    <span class="pie-legend-dot" style="background:${color};"></span>
+                    <span class="pie-legend-name" title="${item.name}">${item.name}</span>
+                </div>
+                <div class="pie-legend-val">${formatNum(item.value)}<span class="pie-legend-unit">명</span></div>
+                <div class="pie-legend-pct-col">
+                    <div class="pie-legend-pct">${pct}%</div>
                     <div class="pie-legend-bar-bg">
                         <div class="pie-legend-bar-fill" style="width:${barWidth}%; background:${color};"></div>
                     </div>
                 </div>
-                <div class="pie-legend-val">${formatNum(item.value)}<span class="pie-legend-unit">명</span></div>
             `;
+
+            // 인터랙션: 호버 시 차트 해당 조각 강조
+            row.addEventListener('mouseenter', () => {
+                if (charts.pieChart) {
+                    charts.pieChart.dispatchAction({ type: 'highlight', dataIndex: idx });
+                    charts.pieChart.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: idx });
+                }
+            });
+            row.addEventListener('mouseleave', () => {
+                if (charts.pieChart) {
+                    charts.pieChart.dispatchAction({ type: 'downplay', dataIndex: idx });
+                    charts.pieChart.dispatchAction({ type: 'hideTip' });
+                }
+            });
+
             legendList.appendChild(row);
         });
     }
@@ -1249,7 +1265,6 @@ function handleSort(colName) {
 }
 
 const tableColsPartner = [
-    { key: '팀', name: '팀', isTeamCol: true },
     { key: '지역', name: '지역' },
     { key: '인원', name: '송출 인원', align: 'right' },
     { key: '지상비', name: '지상비', align: 'right' },
@@ -1258,7 +1273,6 @@ const tableColsPartner = [
 ];
 
 const tableColsGroup = [
-    { key: '팀', name: '팀', isTeamCol: true },
     { key: '협력사', name: '협력사' },
     { key: '인원', name: '송출 인원', align: 'right' },
     { key: '지상비', name: '지상비', align: 'right' },
@@ -1284,7 +1298,6 @@ function renderTable(dataArray) {
 
     const currentCols = (tableViewMode === 'group') ? tableColsGroup : tableColsPartner;
     currentCols.forEach(col => {
-        if (col.isTeamCol && !showTeam) return;
         const th = document.createElement('th');
         if (col.align) th.className = `text-${col.align}`;
         let iconHtml = '<span class="sort-icon">⇅</span>';
@@ -1324,7 +1337,7 @@ function renderTable(dataArray) {
 
             const pRow = document.createElement('tr');
             pRow.className = 'partner-group-header-row';
-            pRow.innerHTML = `<td colspan="${showTeam ? 6 : 5}">
+            pRow.innerHTML = `<td colspan="5">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <div>
                         <span class="partner-rank-badge ${rankClass}">${rank}위</span>
@@ -1358,8 +1371,8 @@ function renderTable(dataArray) {
 
             arr.forEach(d => {
                 const tr = document.createElement('tr');
-                if (showTeam) tr.innerHTML += `<td><span style="color:#64748b; font-size:0.9rem;">${d.팀}</span></td>`;
-                tr.innerHTML += `<td style="font-weight:700; color:var(--accent-navy); padding-left:12px;">${d.지역}</td>
+                const teamBadge = showTeam ? `<span style="font-size:0.75rem; color:#64748b; font-weight:normal; margin-left:6px;">(${d.팀})</span>` : '';
+                tr.innerHTML = `<td style="font-weight:700; color:var(--accent-navy); padding-left:20px;">${d.지역}${teamBadge}</td>
                     <td class="text-right" style="color:var(--accent-blue);font-weight:700">${formatNum(d.인원)}</td>
                     <td class="text-right">${formatNum(d.지상비)}</td>
                     <td class="text-right">${formatNum(d['인당 지상비'])}</td>
@@ -1403,7 +1416,7 @@ function renderTable(dataArray) {
             gRow.className = 'group-header-row';
             const titleText = showTeam ? `[${g.team}] ${g.region}` : `[지역 구분] ${g.region}`;
             const avgCost = g.totalPersonnel > 0 ? Math.round(g.totalCost / g.totalPersonnel) : 0;
-            gRow.innerHTML = `<td colspan="${showTeam ? 6 : 5}">
+            gRow.innerHTML = `<td colspan="5">
                 <strong>${titleText}</strong>
                 <span style="font-weight:normal; font-size:0.85rem; color:#64748b; margin-left:10px;">
                     (지역 총 송출: <strong style="color:var(--accent-navy);">${formatNum(g.totalPersonnel)}명</strong> / 지상비: <strong>${formatNum(g.totalCost)}원</strong> / 평균 인당: <strong>${formatNum(avgCost)}원</strong>)
@@ -1432,8 +1445,8 @@ function renderTable(dataArray) {
                 const isTop = (d.인원 > 0 && d.인원 === maxPersonnelInGroup);
                 if (isTop) tr.className = 'top-region-row';
 
-                if (showTeam) tr.innerHTML += `<td><span style="color:#64748b; font-size:0.9rem;">${d.팀}</span></td>`;
-                tr.innerHTML += `<td style="padding-left:${showTeam ? '20px' : '24px'}; font-weight:700; color:var(--accent-navy);">${d.협력사}${isTop ? '<span class="top-badge">1위</span>' : ''}</td>
+                const teamBadge = showTeam ? `<span style="font-size:0.75rem; color:#64748b; font-weight:normal; margin-left:6px;">(${d.팀})</span>` : '';
+                tr.innerHTML = `<td style="padding-left:20px; font-weight:700; color:var(--accent-navy);">${d.협력사}${teamBadge}${isTop ? '<span class="top-badge">1위</span>' : ''}</td>
                     <td class="text-right" style="color:var(--accent-cyan);font-weight:700">${formatNum(d.인원)}</td>
                     <td class="text-right">${formatNum(d.지상비)}</td>
                     <td class="text-right">${formatNum(d['인당 지상비'])}</td>
