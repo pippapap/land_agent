@@ -26,6 +26,7 @@
             --accent-green: #059669;
             --accent-red: #dc2626;
             --accent-purple: #4f46e5;
+            --accent-cyan: #0891b2;
 
             --font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
             --sidebar-width: 250px;
@@ -979,6 +980,156 @@
             min-height: 20px;
             margin-top: -4px;
         }
+
+        /* Pie/Donut Chart Component */
+        .pie-chart-container { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
+        .pie-chart-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+        .pie-controls { display: flex; align-items: center; gap: 10px; }
+        .pie-select {
+            padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-glass); background: #ffffff;
+            font-size: 0.85rem; font-weight: 600; color: var(--text-primary); cursor: pointer; outline: none; font-family: inherit;
+        }
+        .pie-select:focus { border-color: var(--accent-blue); }
+        .pie-content-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            gap: 24px;
+            align-items: center;
+        }
+        @media (max-width: 900px) {
+            .pie-content-layout { grid-template-columns: 1fr; }
+        }
+        .pie-chart-box { width: 100%; height: 340px; }
+
+        /* Custom Legend Card for Pie Chart */
+        .pie-legend-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            max-height: 340px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .pie-legend-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .pie-legend-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 2px;
+        }
+        .pie-legend-row {
+            display: grid;
+            grid-template-columns: 26px 1fr auto;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 4px;
+            border-radius: 7px;
+            transition: background 0.15s;
+        }
+        .pie-legend-row:hover { background: #f8fafc; }
+        .pie-legend-rank {
+            font-size: 0.7rem;
+            font-weight: 800;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            background: #f1f5f9;
+            color: #64748b;
+            flex-shrink: 0;
+        }
+        .pie-rank-1 { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+        .pie-rank-2 { background: linear-gradient(135deg, #e2e8f0, #cbd5e1); color: #334155; }
+        .pie-rank-3 { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #7c2d12; }
+        .pie-rank-n { background: #f1f5f9; color: #64748b; }
+        .pie-legend-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+        .pie-legend-name-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pie-legend-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .pie-legend-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.84rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .pie-legend-pct {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            flex-shrink: 0;
+        }
+        .pie-legend-bar-bg {
+            height: 4px;
+            background: #f1f5f9;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .pie-legend-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.35s ease;
+        }
+        .pie-legend-val {
+            font-weight: 800;
+            color: var(--accent-navy);
+            font-size: 0.88rem;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .pie-legend-unit {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-left: 2px;
+        }
+
+        /* Table Partner Group Headers */
+        .partner-group-header-row td {
+            background: #f8fafc; border-top: 2px solid #e2e8f0; border-bottom: 1px solid #cbd5e1; padding: 12px 16px;
+        }
+        .partner-rank-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 2px 7px; border-radius: 6px; font-size: 0.75rem; font-weight: 800;
+            background: var(--accent-navy); color: #ffffff; margin-right: 8px;
+        }
+        .partner-rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706) !important; }
+        .partner-rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b) !important; }
+        .partner-rank-3 { background: linear-gradient(135deg, #b45309, #78350f) !important; }
+
     </style>
 </head>
 
@@ -1083,31 +1234,23 @@
 
             <!-- 시각화 차트 영역 -->
             <div class="section-header">
-                <h3 class="section-label">협력사별 비교</h3>
+                <h3 class="section-label" id="compareSectionLabel">팀별 비교</h3>
                 <div class="compare-toggles section-toggles" id="globalCompareToggles">
                     <button class="toggle-btn active" data-type="mom">전월</button>
                     <button class="toggle-btn" data-type="yoy">전년 동월</button>
                 </div>
             </div>
             <section class="chart-section">
-                <!-- 동적 차트 1 -->
+                <!-- 동적 차트 (송출 인원 비교 단일 메인 차트) -->
                 <div class="chart-container glass-panel chart-full">
                     <div class="chart-header-row">
                         <h3 class="section-title" id="chart1Title">팀별 송출 인원 비교</h3>
                     </div>
                     <div id="chart1" class="chart"></div>
                 </div>
-
-                <!-- 동적 차트 2 -->
-                <div class="chart-container glass-panel chart-full">
-                    <div class="chart-header-row">
-                        <h3 class="section-title" id="chart2Title">팀별 지상비 비교</h3>
-                    </div>
-                    <div id="chart2" class="chart"></div>
-                </div>
             </section>
 
-            <!-- 송출 비중 분석 (도넛/파이 차트) -->
+            <!-- 송출 비중 분석 (도넛/파이 차트 및 범례 표) -->
             <div class="section-header">
                 <h3 class="section-label">송출 비중 분석</h3>
                 <div class="compare-toggles section-toggles" id="pieModeToggles">
@@ -1126,7 +1269,18 @@
                             </select>
                         </div>
                     </div>
-                    <div id="pieChart" class="pie-chart-box"></div>
+                    <div class="pie-content-layout">
+                        <div id="pieChart" class="pie-chart-box"></div>
+                        <div class="pie-legend-card" id="pieLegendCard">
+                            <div class="pie-legend-header">
+                                <span>순위 및 항목</span>
+                                <span>송출 인원 (점유율)</span>
+                            </div>
+                            <div class="pie-legend-list" id="pieLegendList">
+                                <!-- 동적 렌더링 -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1380,7 +1534,7 @@
                     const ro = new ResizeObserver(() => {
                         Object.values(charts).forEach(c => c && c.resize());
                     });
-                    document.querySelectorAll('#chart1, #chart2, #pieChart').forEach(el => ro.observe(el));
+                    document.querySelectorAll('#chart1, #pieChart').forEach(el => ro.observe(el));
                 }
 
             } catch (err) {
@@ -1619,7 +1773,7 @@
 
         function initCharts() {
             charts.chart1 = echarts.init(document.getElementById('chart1'));
-            charts.chart2 = echarts.init(document.getElementById('chart2'));
+            // charts.chart2 omitted
             charts.pieChart = echarts.init(document.getElementById('pieChart'));
             // 창 크기 변경 시 차트 자동 재조정
             window.addEventListener('resize', () => {
@@ -1643,8 +1797,10 @@
         }
 
         function updateAllCharts(currArray, prevArray, prevNameStr) {
-            document.getElementById('chart1Title').innerText = `팀별 송출 인원 비교`;
-            document.getElementById('chart2Title').innerText = `팀별 지상비 비교`;
+            const secLabel = document.getElementById('compareSectionLabel');
+            if (secLabel) secLabel.innerText = `팀별 비교`;
+            const c1Title = document.getElementById('chart1Title');
+            if (c1Title) c1Title.innerText = `팀별 송출 인원 비교`;
 
             const aggregate = (dataArr) => {
                 const result = {};
@@ -1660,8 +1816,6 @@
 
             const persCurrS = uniqueKeys.map(k => cMap[k]?.인원 || 0);
             const persPrevS = uniqueKeys.map(k => pMap[k]?.인원 || 0);
-            const costCurrS = uniqueKeys.map(k => cMap[k]?.비용 || 0);
-            const costPrevS = uniqueKeys.map(k => pMap[k]?.비용 || 0);
 
             const prevLegend = prevNameStr || '비교 없음';
 
@@ -1833,12 +1987,13 @@
             };
 
             setGroupChart(charts.chart1, persPrevS, persCurrS, '인원', new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#38bdf8' }, { offset: 1, color: '#1d4ed8' }]));
-            setGroupChart(charts.chart2, costPrevS, costCurrS, '지상비', new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#c084fc' }, { offset: 1, color: '#6b21a8' }]));
         }
 
         function updateTeamCharts(currArray, prevArray, prevNameStr) {
-            document.getElementById('chart1Title').innerText = `협력사/지역별 송출 인원 비교`;
-            document.getElementById('chart2Title').innerText = `협력사/지역별 지상비 비교`;
+            const secLabel = document.getElementById('compareSectionLabel');
+            if (secLabel) secLabel.innerText = `협력사/지역별 비교`;
+            const c1Title = document.getElementById('chart1Title');
+            if (c1Title) c1Title.innerText = `협력사/지역별 송출 인원 비교`;
 
             const partners = [...new Set([...currArray, ...prevArray].map(d => d.협력사))];
             const partnerTotal = {};
