@@ -1195,7 +1195,7 @@
         </main>
     </div><!-- end appLayout -->
 
-    <!-- 암호 인증 및 애플리케이션 스크립트 통합 -->
+    <!-- 암호 인증 전용 스크립트 (독립 실행) -->
     <script>
         (function () {
             const CORRECT = 'vgt123**'; // 기본 비밀번호
@@ -1205,69 +1205,60 @@
             const btn = document.getElementById('passwordSubmit');
             const errMsg = document.getElementById('passwordError');
 
-            let isAuthed = false;
+            function showApp() {
+                if (overlay) overlay.style.display = 'none';
+                if (app) app.style.display = 'flex';
+                if (typeof charts !== 'undefined') {
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            Object.values(charts).forEach(c => c && c.resize && c.resize());
+                        }, 80);
+                    });
+                }
+            }
+
             try {
                 if (sessionStorage.getItem('auth') === '1') {
-                    isAuthed = true;
+                    showApp();
                 }
             } catch (e) {
                 console.warn('sessionStorage access restricted:', e);
             }
 
-            if (isAuthed) {
-                if (overlay) overlay.style.display = 'none';
-                if (app) app.style.display = 'flex';
-                // 세션 자동 로그인: display 변경 후 차트 resize 트리거
-                requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        Object.values(charts).forEach(c => c && c.resize());
-                    }, 80);
-                });
-            }
-
-            function triggerChartsAfterLogin() {
-                // display:flex 적용 후 레이아웃 재계산 대기
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        Object.values(charts).forEach(c => c && c.resize());
-                        // 레이아웃 안정화 후 추가 resize
-                        setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 150);
-                    });
-                });
-            }
-
             function tryLogin() {
-                const entered = (input.value || '').trim();
+                const entered = (input ? input.value || '' : '').trim();
                 if (entered === CORRECT) {
                     try {
                         sessionStorage.setItem('auth', '1');
                     } catch (e) {
                         console.warn('sessionStorage write restricted:', e);
                     }
-                    if (overlay) overlay.style.display = 'none';
-                    if (app) app.style.display = 'flex';
                     if (errMsg) errMsg.textContent = '';
-                    triggerChartsAfterLogin();
+                    showApp();
                 } else {
                     if (errMsg) errMsg.textContent = '⚠️ 비밀번호가 일치하지 않습니다.';
-                    input.value = '';
-                    input.focus();
+                    if (input) {
+                        input.value = '';
+                        input.focus();
+                    }
                 }
             }
 
             if (btn) btn.addEventListener('click', tryLogin);
             if (input) {
-                input.addEventListener('keydown', e => { 
+                input.addEventListener('keydown', function (e) { 
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         tryLogin(); 
                     }
                 });
-                // 자동 포커스
-                setTimeout(() => input.focus(), 100);
+                setTimeout(() => input.focus(), 80);
             }
         })();
+    </script>
 
+    <!-- 대시보드 메인 비즈니스 로직 스크립트 -->
+    <script>
         // === 전역 데이터 관리 ===
         let rawData = [];
         let selectedTeam = 'all';
@@ -2629,12 +2620,78 @@
 
             let displayArray = [...enrichedArray];
 
-                        <td>${d.지역}</td>
-                        <td class="text-right" style="color:var(--accent-cyan);font-weight:600">${formatNum(d.인원)}</td>
-                        <td class="text-right">${formatNum(d.지상비)}</td>
-                        <td class="text-right">${formatNum(d['인당 지상비'])}</td>
-                        <td class="text-center"><span class="quadrant-badge ${d._qClass}">${d._qText}</span></td>`;
-                    tBody.appendChild(tr);
+            if (tableViewMode === 'partner') {
+                const partnerMap = {};
+                displayArray.forEach(d => {
+                    if (!partnerMap[d.협력사]) {
+                        partnerMap[d.협력사] = {
+                            partner: d.협력사,
+                            items: [],
+                            totalPersonnel: 0,
+                            totalCost: 0
+                        };
+                    }
+                    partnerMap[d.협력사].items.push(d);
+                    partnerMap[d.협력사].totalPersonnel += (d.인원 || 0);
+                    partnerMap[d.협력사].totalCost += (d.지상비 || 0);
+                });
+
+                const sortedPartnerKeys = Object.keys(partnerMap).sort((a, b) => {
+                    return partnerMap[b].totalPersonnel - partnerMap[a].totalPersonnel;
+                });
+
+                sortedPartnerKeys.forEach((partnerName, idx) => {
+                    const pGroup = partnerMap[partnerName];
+                    const rank = idx + 1;
+                    const rankClass = rank === 1 ? 'partner-rank-1' : (rank === 2 ? 'partner-rank-2' : (rank === 3 ? 'partner-rank-3' : ''));
+                    const avgUnitCost = pGroup.totalPersonnel > 0 ? Math.round(pGroup.totalCost / pGroup.totalPersonnel) : 0;
+                    const regionCount = [...new Set(pGroup.items.map(x => x.지역))].length;
+
+                    const pRow = document.createElement('tr');
+                    pRow.className = 'partner-group-header-row';
+                    pRow.innerHTML = `<td colspan="${showTeam ? 7 : 6}">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <span class="partner-rank-badge ${rankClass}">${rank}위</span>
+                                <strong style="font-size:1rem; color:var(--text-primary);">${partnerName}</strong>
+                                <span style="font-size:0.8rem; color:#64748b; margin-left:6px;">(${regionCount}개 지역 송출)</span>
+                            </div>
+                            <div style="font-size:0.86rem; color:#475569;">
+                                소계: 송출인원 <strong style="color:var(--accent-blue);">${formatNum(pGroup.totalPersonnel)}명</strong>
+                                <span style="color:#cbd5e1; margin:0 6px;">|</span>
+                                지상비 <strong>${formatNum(pGroup.totalCost)}원</strong>
+                                <span style="color:#cbd5e1; margin:0 6px;">|</span>
+                                평균 인당 <strong>${formatNum(avgUnitCost)}원</strong>
+                            </div>
+                        </div>
+                    </td>`;
+                    if (tBody) tBody.appendChild(pRow);
+
+                    const arr = [...pGroup.items];
+                    if (sortCol && sortCol !== '협력사') {
+                        arr.sort((a, b) => {
+                            let valA = a[sortCol], valB = b[sortCol];
+                            if (typeof valA === 'string') valA = valA.toLowerCase();
+                            if (typeof valB === 'string') valB = valB.toLowerCase();
+                            if (valA < valB) return sortDesc ? 1 : -1;
+                            if (valA > valB) return sortDesc ? -1 : 1;
+                            return 0;
+                        });
+                    } else {
+                        arr.sort((a, b) => (b.인원 || 0) - (a.인원 || 0));
+                    }
+
+                    arr.forEach(d => {
+                        const tr = document.createElement('tr');
+                        if (showTeam) tr.innerHTML += `<td><span style="color:#64748b; font-size:0.9rem;">${d.팀}</span></td>`;
+                        tr.innerHTML += `<td style="padding-left:28px; color:var(--text-primary); font-weight:600;">↳ ${d.협력사}</td>
+                            <td style="font-weight:700; color:var(--accent-navy);">${d.지역}</td>
+                            <td class="text-right" style="color:var(--accent-blue);font-weight:700">${formatNum(d.인원)}</td>
+                            <td class="text-right">${formatNum(d.지상비)}</td>
+                            <td class="text-right">${formatNum(d['인당 지상비'])}</td>
+                            <td class="text-center"><span class="quadrant-badge ${d._qClass}">${d._qText}</span></td>`;
+                        if (tBody) tBody.appendChild(tr);
+                    });
                 });
             } else if (tableViewMode === 'group') {
                 // 팀별 / 지역별 독립 그룹화
