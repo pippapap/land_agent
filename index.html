@@ -1198,16 +1198,25 @@
     <!-- 암호 인증 및 애플리케이션 스크립트 통합 -->
     <script>
         (function () {
-            const CORRECT = 'vgt123**'; // 비밀번호
+            const CORRECT = 'vgt123**'; // 기본 비밀번호
             const overlay = document.getElementById('passwordOverlay');
             const app = document.getElementById('appLayout');
             const input = document.getElementById('passwordInput');
             const btn = document.getElementById('passwordSubmit');
             const errMsg = document.getElementById('passwordError');
 
-            if (sessionStorage.getItem('auth') === '1') {
-                overlay.style.display = 'none';
-                app.style.display = 'flex';
+            let isAuthed = false;
+            try {
+                if (sessionStorage.getItem('auth') === '1') {
+                    isAuthed = true;
+                }
+            } catch (e) {
+                console.warn('sessionStorage access restricted:', e);
+            }
+
+            if (isAuthed) {
+                if (overlay) overlay.style.display = 'none';
+                if (app) app.style.display = 'flex';
                 // 세션 자동 로그인: display 변경 후 차트 resize 트리거
                 requestAnimationFrame(() => {
                     setTimeout(() => {
@@ -1228,21 +1237,35 @@
             }
 
             function tryLogin() {
-                if (input.value === CORRECT) {
-                    sessionStorage.setItem('auth', '1');
-                    overlay.style.display = 'none';
-                    app.style.display = 'flex';
-                    errMsg.textContent = '';
+                const entered = (input.value || '').trim();
+                if (entered === CORRECT) {
+                    try {
+                        sessionStorage.setItem('auth', '1');
+                    } catch (e) {
+                        console.warn('sessionStorage write restricted:', e);
+                    }
+                    if (overlay) overlay.style.display = 'none';
+                    if (app) app.style.display = 'flex';
+                    if (errMsg) errMsg.textContent = '';
                     triggerChartsAfterLogin();
                 } else {
-                    errMsg.textContent = '⚠️ 비밀번호가 다릅니다.';
+                    if (errMsg) errMsg.textContent = '⚠️ 비밀번호가 일치하지 않습니다.';
                     input.value = '';
                     input.focus();
                 }
             }
 
-            btn.addEventListener('click', tryLogin);
-            input.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+            if (btn) btn.addEventListener('click', tryLogin);
+            if (input) {
+                input.addEventListener('keydown', e => { 
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        tryLogin(); 
+                    }
+                });
+                // 자동 포커스
+                setTimeout(() => input.focus(), 100);
+            }
         })();
 
         // === 전역 데이터 관리 ===
