@@ -1,4 +1,4 @@
-// === 전역 데이터 관리 ===
+﻿// === 전역 데이터 관리 ===
 let rawData = [];
 let selectedTeam = 'all';
 let selectedQuadrant = 'all'; // 'all' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
@@ -88,17 +88,17 @@ function getPeriodOptions(pType) {
         const options = [];
         years.forEach(year => {
             const yy = year.slice(2);
-            options.push({ value: `${year}-Q1`, label: `${year}년 1분기(${yy}년 1~3월 합산)` });
-            options.push({ value: `${year}-Q2`, label: `${year}년 2분기(${yy}년 4~6월 합산)` });
-            options.push({ value: `${year}-Q3`, label: `${year}년 3분기(${yy}년 7~9월 합산)` });
-            options.push({ value: `${year}-Q4`, label: `${year}년 4분기(${yy}년 10~12월 합산)` });
+            options.push({ value: `${year}-Q1`, label: `${year}년 1분기` });
+            options.push({ value: `${year}-Q2`, label: `${year}년 2분기` });
+            options.push({ value: `${year}-Q3`, label: `${year}년 3분기` });
+            options.push({ value: `${year}-Q4`, label: `${year}년 4분기` });
         });
         return options;
     } else if (pType === 'year') {
         const options = [];
         years.forEach(year => {
             const yy = year.slice(2);
-            options.push({ value: `${year}`, label: `${year}년(${yy}년 1~12월 합산)` });
+            options.push({ value: `${year}`, label: `${year}년` });
         });
         return options;
     }
@@ -576,7 +576,7 @@ function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuf
         const result = {};
         dataArr.forEach(d => {
             if (!result[d.팀]) result[d.팀] = { 인원: 0, 비용: 0 };
-            result[d.팀].인원 += d.인원; result[d.팀].비용 += d.지상비;
+            result[d.팀].인원 += (Number(d.인원) || 0); result[d.팀].비용 += (Number(d.지상비) || 0);
         });
         return result;
     };
@@ -1452,18 +1452,18 @@ function renderPieLegendList(pieData, totalVal, donutColors) {
         const color = donutColors[idx % donutColors.length];
         const pct = totalVal > 0 ? ((item.value / totalVal) * 100).toFixed(1) + '%' : '0%';
         const rank = idx + 1;
-        const rankBadgeClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : 'rank-other'));
+        const rankBadgeClass = rank === 1 ? 'pie-rank-1' : (rank === 2 ? 'pie-rank-2' : (rank === 3 ? 'pie-rank-3' : 'pie-rank-n'));
 
         const row = document.createElement('div');
-        row.className = 'pie-legend-item';
+        row.className = 'pie-legend-row';
         row.innerHTML = `
-            <span class="pie-rank-badge ${rankBadgeClass}">${rank}</span>
-            <div class="pie-legend-name" title="${item.name}">
-                <span class="pie-color-dot" style="background:${color};"></span>
-                <span class="pie-name-text">${item.name}</span>
+            <span class="pie-legend-rank ${rankBadgeClass}">${rank}</span>
+            <div class="pie-legend-name-col" title="${item.name}">
+                <span class="pie-legend-dot" style="background:${color};"></span>
+                <span class="pie-legend-name">${item.name}</span>
             </div>
-            <span class="pie-legend-val">${formatNum(item.value)}명</span>
-            <span class="pie-legend-pct">${pct}</span>
+            <span class="pie-legend-val text-right">${formatNum(item.value)}명</span>
+            <span class="pie-legend-pct text-right">${pct}</span>
         `;
 
         row.addEventListener('mouseenter', () => {
@@ -1755,3 +1755,8 @@ function renderTable(dataArray, baseAllData) {
         });
     }
 }
+
+
+
+
+
