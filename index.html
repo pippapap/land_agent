@@ -323,6 +323,21 @@
             color: var(--text-primary);
         }
 
+                .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .period-type-toggles {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
         .filter-controls select {
             background: #ffffff;
             color: var(--text-primary);
@@ -1203,6 +1218,11 @@
                     <h2 id="currentTeamTitle">전체 현황</h2>
                 </div>
                 <div class="topbar-right filter-controls">
+                    <div class="period-type-toggles section-toggles" id="periodTypeToggles">
+                        <button type="button" class="toggle-btn active" data-period="month">월별</button>
+                        <button type="button" class="toggle-btn" data-period="quarter">분기별</button>
+                        <button type="button" class="toggle-btn" data-period="year">연도별</button>
+                    </div>
                     <div class="filter-group">
                         <select id="monthSelect">
                             <!-- JS 동적 렌더링 -->

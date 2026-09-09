@@ -2,7 +2,9 @@
 let rawData = [];
 let selectedTeam = 'all';
 let selectedQuadrant = 'all'; // 'all' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
-let currentMonthDef = '';
+let periodType = 'month'; // 'month' | 'quarter' | 'year'
+let selectedPeriod = ''; // '2026-07', '2026-Q3', '2026'
+let currentMonthDef = ''; // 호환성 유지용
 let charts = {};
 
 let chartCompareType = 'mom'; // 'mom' | 'yoy'
@@ -66,6 +68,169 @@ function preprocessData() {
     });
 }
 
+// === 기간(월/분기/연도) 유틸리티 함수 ===
+function getAvailableMonths() {
+    return [...new Set(rawData.map(d => d.월).filter(Boolean))].sort();
+}
+
+function getAvailableYears() {
+    const months = getAvailableMonths();
+    return [...new Set(months.map(m => m.split('-')[0]))].sort();
+}
+
+function getPeriodOptions(pType) {
+    const years = getAvailableYears();
+    const months = getAvailableMonths();
+
+    if (pType === 'month') {
+        return months.map(m => ({ value: m, label: m }));
+    } else if (pType === 'quarter') {
+        const options = [];
+        years.forEach(year => {
+            const yy = year.slice(2);
+            options.push({ value: `${year}-Q1`, label: `${year}년 1분기(${yy}년 1~3월 합산)` });
+            options.push({ value: `${year}-Q2`, label: `${year}년 2분기(${yy}년 4~6월 합산)` });
+            options.push({ value: `${year}-Q3`, label: `${year}년 3분기(${yy}년 7~9월 합산)` });
+            options.push({ value: `${year}-Q4`, label: `${year}년 4분기(${yy}년 10~12월 합산)` });
+        });
+        return options;
+    } else if (pType === 'year') {
+        const options = [];
+        years.forEach(year => {
+            const yy = year.slice(2);
+            options.push({ value: `${year}`, label: `${year}년(${yy}년 1~12월 합산)` });
+        });
+        return options;
+    }
+    return [];
+}
+
+function getPeriodMonths(pType, pValue) {
+    if (!pValue) return [];
+    if (pType === 'month') {
+        return [pValue];
+    } else if (pType === 'quarter') {
+        const [y, q] = pValue.split('-Q');
+        if (q === '1') return [`${y}-01`, `${y}-02`, `${y}-03`];
+        if (q === '2') return [`${y}-04`, `${y}-05`, `${y}-06`];
+        if (q === '3') return [`${y}-07`, `${y}-08`, `${y}-09`];
+        if (q === '4') return [`${y}-10`, `${y}-11`, `${y}-12`];
+    } else if (pType === 'year') {
+        return Array.from({ length: 12 }, (_, i) => `${pValue}-${String(i + 1).padStart(2, '0')}`);
+    }
+    return [];
+}
+
+function getComparisonPeriodKey(pType, pValue, compareType) {
+    if (!pValue) return null;
+    if (pType === 'month') {
+        if (!pValue.includes('-')) return null;
+        const [y, m] = pValue.split('-').map(Number);
+        if (compareType === 'mom') {
+            let py = y, pm = m - 1;
+            if (pm === 0) { pm = 12; py -= 1; }
+            return `${py}-${pm.toString().padStart(2, '0')}`;
+        } else if (compareType === 'yoy') {
+            return `${y - 1}-${m.toString().padStart(2, '0')}`;
+        }
+    } else if (pType === 'quarter') {
+        if (!pValue.includes('-Q')) return null;
+        const [yStr, qStr] = pValue.split('-Q');
+        const y = Number(yStr), q = Number(qStr);
+        if (compareType === 'mom') {
+            let pq = q - 1, py = y;
+            if (pq === 0) { pq = 4; py -= 1; }
+            return `${py}-Q${pq}`;
+        } else if (compareType === 'yoy') {
+            return `${y - 1}-Q${q}`;
+        }
+    } else if (pType === 'year') {
+        const y = Number(pValue);
+        return `${y - 1}`;
+    }
+    return null;
+}
+
+function getPeriodDisplayLabel(pType, pValue) {
+    if (!pValue) return '';
+    if (pType === 'month') {
+        return pValue;
+    } else if (pType === 'quarter') {
+        const parts = pValue.split('-Q');
+        return `${parts[0]}년 ${parts[1]}분기`;
+    } else if (pType === 'year') {
+        return `${pValue}년`;
+    }
+    return pValue;
+}
+
+function getPeriodData(pType, pValue) {
+    const targetMonths = getPeriodMonths(pType, pValue);
+    if (!targetMonths || targetMonths.length === 0) return [];
+
+    const matched = rawData.filter(d => targetMonths.includes(d.월));
+    if (matched.length === 0) return [];
+
+    // (팀, 협력사, 지역) 단위 합산
+    const map = new Map();
+    matched.forEach(d => {
+        const team = d.팀 || '';
+        const partner = d.협력사 || '';
+        const region = d.지역 || '';
+        const key = `${team}___${partner}___${region}`;
+        if (!map.has(key)) {
+            map.set(key, {
+                팀: team,
+                협력사: partner,
+                지역: region,
+                인원: 0,
+                지상비: 0,
+                '인당 지상비': 0
+            });
+        }
+        const item = map.get(key);
+        item.인원 += (Number(d.인원) || 0);
+        item.지상비 += (Number(d.지상비) || 0);
+    });
+
+    const result = Array.from(map.values());
+    result.forEach(item => {
+        item['인당 지상비'] = item.인원 > 0 ? Math.round(item.지상비 / item.인원) : 0;
+    });
+    return result;
+}
+
+function renderPeriodSelect() {
+    const monthSelect = document.getElementById('monthSelect');
+    if (!monthSelect) return;
+
+    const options = getPeriodOptions(periodType);
+    monthSelect.innerHTML = '';
+    options.forEach(opt => {
+        monthSelect.innerHTML += `<option value="${opt.value}">${opt.label}</option>`;
+    });
+
+    const exists = options.some(opt => opt.value === selectedPeriod);
+    if (!exists) {
+        if (periodType === 'month') {
+            const months = getAvailableMonths();
+            selectedPeriod = months.length > 0 ? months[months.length - 1] : '';
+        } else if (periodType === 'quarter') {
+            const months = getAvailableMonths();
+            const latestMonth = months.length > 0 ? months[months.length - 1] : '2026-07';
+            const [y, m] = latestMonth.split('-').map(Number);
+            const q = Math.ceil(m / 3);
+            const defQ = `${y}-Q${q}`;
+            selectedPeriod = options.some(opt => opt.value === defQ) ? defQ : (options[0]?.value || '');
+        } else if (periodType === 'year') {
+            const years = getAvailableYears();
+            selectedPeriod = years.length > 0 ? years[years.length - 1] : '2026';
+        }
+    }
+    monthSelect.value = selectedPeriod;
+    currentMonthDef = selectedPeriod;
+}
+
 async function loadData() {
     try {
         let manifest = await fetchJsonSafe('./data/index.json');
@@ -88,7 +253,7 @@ async function loadData() {
         if (rawData.length === 0) throw new Error('데이터 로드 실패');
 
         preprocessData();
-        extractMonthsAndInit();
+        renderPeriodSelect();
         initSidebar();
         initCharts();
         setupEventListeners();
@@ -113,33 +278,6 @@ async function loadData() {
 
 document.addEventListener('DOMContentLoaded', loadData);
 
-function extractMonthsAndInit() {
-    const monthSelect = document.getElementById('monthSelect');
-    const months = [...new Set(rawData.map(d => d.월))].sort();
-
-    monthSelect.innerHTML = '';
-    months.forEach(m => {
-        monthSelect.innerHTML += `<option value="${m}">${m}</option>`;
-    });
-
-    if (months.length > 0) {
-        currentMonthDef = months[months.length - 1];
-        monthSelect.value = currentMonthDef;
-    }
-}
-
-function getComparisonMonth(baseMonth, type) {
-    if (!baseMonth || !baseMonth.includes('-')) return null;
-    const [y, m] = baseMonth.split('-').map(Number);
-    if (type === 'mom') {
-        let py = y, pm = m - 1;
-        if (pm === 0) { pm = 12; py -= 1; }
-        return `${py}-${pm.toString().padStart(2, '0')}`;
-    } else if (type === 'yoy') {
-        return `${y - 1}-${m.toString().padStart(2, '0')}`;
-    }
-}
-
 function initSidebar() {
     const teamNav = document.getElementById('teamNav');
     teamNav.innerHTML = '';
@@ -152,13 +290,9 @@ function initSidebar() {
     teamNav.appendChild(allLi);
 
     DIVISION_CONFIG.forEach(div => {
-        const divider = document.createElement('div');
-        divider.className = 'nav-divider';
-        teamNav.appendChild(divider);
-
-        const divHeader = document.createElement('div');
+        const divHeader = document.createElement('li');
         divHeader.className = 'nav-division-header';
-        divHeader.innerText = div.division;
+        divHeader.innerHTML = `<span>${div.division}</span>`;
         teamNav.appendChild(divHeader);
 
         div.teams.forEach(t => {
@@ -176,15 +310,34 @@ function changeTeam(tName, el) {
     selectedTeam = tName;
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('currentTeamTitle').innerText = (tName === 'all') ? '전체' : tName;
+    document.getElementById('currentTeamTitle').innerText = (tName === 'all') ? '전체 현황' : tName;
     pieTarget = 'all';
     applyFilter();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function setupEventListeners() {
+    // 기간 구분 토글 버튼 (월별 / 분기별 / 연도별)
+    document.querySelectorAll('#periodTypeToggles .toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const newType = e.target.dataset.period;
+            if (periodType === newType) return;
+            periodType = newType;
+            document.querySelectorAll('#periodTypeToggles .toggle-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.period === periodType);
+            });
+            selectedPeriod = '';
+            renderPeriodSelect();
+            pieTarget = 'all';
+            applyFilter();
+        });
+    });
+
+    // 기간 드롭다운 셀렉트
     document.getElementById('monthSelect').addEventListener('change', (e) => {
-        currentMonthDef = e.target.value;
+        selectedPeriod = e.target.value;
+        currentMonthDef = selectedPeriod;
+        pieTarget = 'all';
         applyFilter();
     });
 
@@ -215,7 +368,7 @@ function setupEventListeners() {
     if (pieSelect) {
         pieSelect.addEventListener('change', (e) => {
             pieTarget = e.target.value;
-            const baseCurr = rawData.filter(d => d.월 === currentMonthDef);
+            const baseCurr = getPeriodData(periodType, selectedPeriod);
             const currTarget = (selectedTeam === 'all') ? baseCurr : baseCurr.filter(d => d.팀 === selectedTeam);
             updatePieChart(currTarget);
         });
@@ -271,14 +424,80 @@ function applyFilter() {
         btn.classList.toggle('active', selectedQuadrant === q);
     });
 
-    const chartCompare = getComparisonMonth(currentMonthDef, chartCompareType);
-    const kpiMomMonth = getComparisonMonth(currentMonthDef, 'mom');
-    const kpiYoyMonth = getComparisonMonth(currentMonthDef, 'yoy');
+    // 기간 모드에 따른 비교 버튼 및 레이블 갱신
+    const momBtn = document.querySelector('#globalCompareToggles [data-type="mom"]');
+    const yoyBtn = document.querySelector('#globalCompareToggles [data-type="yoy"]');
+    if (momBtn && yoyBtn) {
+        if (periodType === 'month') {
+            momBtn.innerText = '전월';
+            yoyBtn.innerText = '전년 동월';
+            momBtn.style.display = '';
+            yoyBtn.style.display = '';
+        } else if (periodType === 'quarter') {
+            momBtn.innerText = '전분기';
+            yoyBtn.innerText = '전년 동분기';
+            momBtn.style.display = '';
+            yoyBtn.style.display = '';
+        } else if (periodType === 'year') {
+            momBtn.innerText = '전년도';
+            yoyBtn.style.display = 'none';
+            chartCompareType = 'mom';
+            momBtn.classList.add('active');
+            yoyBtn.classList.remove('active');
+        }
+    }
 
-    const baseCurr = rawData.filter(d => d.월 === currentMonthDef);
-    const baseChartPrev = rawData.filter(d => d.월 === chartCompare);
-    const baseKpiMom = rawData.filter(d => d.월 === kpiMomMonth);
-    const baseKpiYoy = rawData.filter(d => d.월 === kpiYoyMonth);
+    let pLabelSuffix = '당월';
+    let momTrendLabel = '전월 대비';
+    let yoyTrendLabel = '전년 동월 대비';
+
+    if (periodType === 'quarter') {
+        pLabelSuffix = '당분기';
+        momTrendLabel = '전분기 대비';
+        yoyTrendLabel = '전년 동분기 대비';
+    } else if (periodType === 'year') {
+        pLabelSuffix = '연간';
+        momTrendLabel = '전년 대비';
+        yoyTrendLabel = '전년 대비';
+    }
+
+    const kpiPTitle = document.getElementById('kpiPersonnelTitle');
+    if (kpiPTitle) kpiPTitle.innerText = `${pLabelSuffix} 송출 인원`;
+
+    const kpiCTitle = document.getElementById('kpiCostTitle');
+    if (kpiCTitle) kpiCTitle.innerText = `${pLabelSuffix} 총 지상비 (비용)`;
+
+    const kpiAvgCostTitle = document.getElementById('kpiAvgCostTitle');
+    if (kpiAvgCostTitle) {
+        kpiAvgCostTitle.innerText = (selectedTeam === 'all') 
+            ? `${pLabelSuffix} 평균 인당 지상비 (전체)` 
+            : `${pLabelSuffix} 평균 인당 지상비 (${selectedTeam})`;
+    }
+
+    document.querySelectorAll('.kpi-card .kpi-trend-item').forEach(item => {
+        const lbl = item.querySelector('.trend-label');
+        const valSpan = item.querySelector('.trend-val');
+        if (!lbl || !valSpan) return;
+        if (valSpan.id.includes('Mom')) {
+            lbl.innerText = momTrendLabel;
+            item.style.display = '';
+        } else if (valSpan.id.includes('Yoy')) {
+            lbl.innerText = yoyTrendLabel;
+            item.style.display = (periodType === 'year') ? 'none' : '';
+        }
+    });
+
+    const chartCompareKey = getComparisonPeriodKey(periodType, selectedPeriod, chartCompareType);
+    const kpiMomKey = getComparisonPeriodKey(periodType, selectedPeriod, 'mom');
+    const kpiYoyKey = getComparisonPeriodKey(periodType, selectedPeriod, 'yoy');
+
+    const currPeriodLabel = getPeriodDisplayLabel(periodType, selectedPeriod);
+    const chartCompareLabel = chartCompareKey ? getPeriodDisplayLabel(periodType, chartCompareKey) : '비교 없음';
+
+    const baseCurr = getPeriodData(periodType, selectedPeriod);
+    const baseChartPrev = chartCompareKey ? getPeriodData(periodType, chartCompareKey) : [];
+    const baseKpiMom = kpiMomKey ? getPeriodData(periodType, kpiMomKey) : [];
+    const baseKpiYoy = kpiYoyKey ? getPeriodData(periodType, kpiYoyKey) : [];
 
     const currTarget = (selectedTeam === 'all') ? baseCurr : baseCurr.filter(d => d.팀 === selectedTeam);
     const chartPrevTarget = (selectedTeam === 'all') ? baseChartPrev : baseChartPrev.filter(d => d.팀 === selectedTeam);
@@ -307,22 +526,18 @@ function applyFilter() {
     document.getElementById('kpiCostTrendMom').innerHTML = getTrendHTML(sumC_curr, sumC_mom, '원');
     document.getElementById('kpiCostTrendYoy').innerHTML = getTrendHTML(sumC_curr, sumC_yoy, '원');
 
-    const kpiAvgCostTitle = document.getElementById('kpiAvgCostTitle');
-    if (kpiAvgCostTitle) {
-        kpiAvgCostTitle.innerText = (selectedTeam === 'all') ? '당월 평균 인당 지상비 (전체)' : `당월 평균 인당 지상비 (${selectedTeam})`;
-    }
     document.getElementById('kpiAvgCostCurrent').innerText = formatNum(avgCost_curr);
     document.getElementById('kpiAvgCostTrendMom').innerHTML = getTrendHTML(avgCost_curr, avgCost_mom, '원');
     document.getElementById('kpiAvgCostTrendYoy').innerHTML = getTrendHTML(avgCost_curr, avgCost_yoy, '원');
 
     if (selectedTeam === 'all') {
-        updateAllCharts(currTarget, chartPrevTarget, chartCompare);
+        updateAllCharts(currTarget, chartPrevTarget, chartCompareLabel, currPeriodLabel, pLabelSuffix);
     } else {
-        updateTeamCharts(currTarget, chartPrevTarget, chartCompare);
+        updateTeamCharts(currTarget, chartPrevTarget, chartCompareLabel, currPeriodLabel, pLabelSuffix);
     }
 
     updatePieChart(currTarget);
-    renderTable(currTarget);
+    renderTable(currTarget, baseCurr);
 }
 
 function initCharts() {
@@ -351,7 +566,7 @@ function formatCompactWon(val) {
     return formatNum(val);
 }
 
-function updateAllCharts(currArray, prevArray, prevNameStr) {
+function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuffix) {
     const c1t = document.getElementById('chart1Title');
     if (c1t) c1t.innerText = `팀별 송출 인원 비교`;
     const c2t = document.getElementById('chart2Title');
@@ -375,8 +590,24 @@ function updateAllCharts(currArray, prevArray, prevNameStr) {
     const costPrevS = uniqueKeys.map(k => pMap[k]?.비용 || 0);
 
     const prevLegend = prevNameStr || '비교 없음';
+    const currLegend = currNameStr || '당기';
+    const periodSuffix = currSuffix || '당기';
 
     const setGroupChart = (chartInstance, prevS, currS, field, currGradient) => {
+        if (!chartInstance) return;
+        if (uniqueKeys.length === 0) {
+            chartInstance.clear();
+            chartInstance.setOption({
+                title: {
+                    text: '선택된 기간에 조회된 데이터가 없습니다.',
+                    left: 'center',
+                    top: 'middle',
+                    textStyle: { color: '#94a3b8', fontSize: 14, fontWeight: 500, fontFamily: 'Pretendard, sans-serif' }
+                }
+            });
+            return;
+        }
+
         const unit = (field === '인원') ? '명' : '원';
         const needsZoom = uniqueKeys.length > 9;
 
@@ -407,7 +638,7 @@ function updateAllCharts(currArray, prevArray, prevNameStr) {
                             <strong style="color:#475569;">${formatNum(prevVal)} ${unit}</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:6px; font-size:12px;">
-                            <span style="color:${field === '인원' ? '#2563eb' : '#7c3aed'}; font-weight:700;">${currentMonthDef} (당월):</span>
+                            <span style="color:${field === '인원' ? '#2563eb' : '#7c3aed'}; font-weight:700;">${currLegend} (${periodSuffix}):</span>
                             <strong style="color:#0f172a;">${formatNum(currVal)} ${unit}</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; gap:16px; padding-top:4px; border-top:1px dashed #e2e8f0; font-size:12px;">
@@ -417,7 +648,7 @@ function updateAllCharts(currArray, prevArray, prevNameStr) {
                 }
             },
             legend: {
-                data: [`${prevLegend} (이전)`, `${currentMonthDef} (당월)`],
+                data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
                 top: 0,
                 right: 12,
                 textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
@@ -441,14 +672,15 @@ function updateAllCharts(currArray, prevArray, prevNameStr) {
                     show: true,
                     xAxisIndex: [0],
                     bottom: 8,
-                    height: 22,
+                    height: 24,
                     startValue: 0,
-                    endValue: 7,
+                    endValue: Math.min(uniqueKeys.length - 1, 8),
                     fillerColor: field === '인원' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(124, 58, 237, 0.15)',
                     borderColor: '#cbd5e1',
                     handleStyle: { color: field === '인원' ? '#2563eb' : '#7c3aed' },
-                    textStyle: { color: '#64748b', fontSize: 11, fontFamily: 'Pretendard, sans-serif' },
-                    brushSelect: false
+                    textStyle: { color: '#64748b', fontSize: 11, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' },
+                    brushSelect: false,
+                    showDetail: true
                 },
                 { type: 'inside', xAxisIndex: [0], zoomOnMouseWheel: false, moveOnMouseMove: true }
             ] : [],
@@ -456,49 +688,72 @@ function updateAllCharts(currArray, prevArray, prevNameStr) {
                 {
                     name: `${prevLegend} (이전)`,
                     type: 'bar',
-                    data: prevS,
-                    barMaxWidth: 32,
-                    itemStyle: { color: '#cbd5e1', borderColor: '#94a3b8', borderWidth: 1, borderRadius: [3, 3, 0, 0] },
-                    barGap: '15%',
-                    label: {
-                        show: true,
-                        position: 'top',
-                        distance: 6,
-                        align: 'center',
-                        color: '#475569',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        fontFamily: 'Pretendard, sans-serif',
-                        backgroundColor: 'rgba(241, 245, 249, 0.95)',
-                        borderColor: '#cbd5e1',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        padding: [2, 5],
-                        formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value) + '명') : ''
-                    }
+                    barGap: '12%',
+                    barMaxWidth: 36,
+                    itemStyle: {
+                        color: '#94a3b8',
+                        borderColor: '#64748b',
+                        borderWidth: 1.2,
+                        borderRadius: [3, 3, 0, 0]
+                    },
+                    data: prevS.map((val, idx) => {
+                        if (!val || val <= 0) return { value: 0, label: { show: false } };
+                        return {
+                            value: val,
+                            label: {
+                                show: true,
+                                position: 'top',
+                                color: '#64748b',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                fontFamily: 'Pretendard, sans-serif',
+                                formatter: val => (field === '지상비' ? formatCompactWon(val) : formatNum(val))
+                            }
+                        };
+                    })
                 },
                 {
-                    name: `${currentMonthDef} (당월)`,
+                    name: `${currLegend} (${periodSuffix})`,
                     type: 'bar',
-                    data: currS,
-                    barMaxWidth: 32,
-                    itemStyle: { color: currGradient, borderRadius: [4, 4, 0, 0], shadowColor: field === '인원' ? 'rgba(37, 99, 235, 0.25)' : 'rgba(124, 58, 237, 0.25)', shadowBlur: 4 },
-                    label: {
-                        show: true,
-                        position: 'top',
-                        distance: 6,
-                        align: 'center',
-                        color: field === '인원' ? '#1d4ed8' : '#6b21a8',
-                        fontSize: 11,
-                        fontWeight: 800,
-                        fontFamily: 'Pretendard, sans-serif',
-                        backgroundColor: field === '인원' ? 'rgba(219, 234, 254, 0.95)' : 'rgba(237, 233, 254, 0.95)',
-                        borderColor: field === '인원' ? '#93c5fd' : '#c4b5fd',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        padding: [2, 5],
-                        formatter: p => p.value > 0 ? (field === '지상비' ? formatCompactWon(p.value) : formatNum(p.value) + '명') : ''
-                    }
+                    barMaxWidth: 36,
+                    itemStyle: {
+                        color: currGradient,
+                        borderRadius: [3, 3, 0, 0]
+                    },
+                    data: currS.map((val, idx) => {
+                        if (!val || val <= 0) return { value: 0, label: { show: false } };
+                        const prevVal = prevS[idx] || 0;
+                        const diff = val - prevVal;
+                        const rate = prevVal > 0 ? ((diff / prevVal) * 100).toFixed(0) + '%' : '';
+                        const tag = prevVal > 0 ? (diff > 0 ? `▲+${rate}` : diff < 0 ? `▼${rate}` : `-`) : '';
+                        const tagColor = diff > 0 ? '#16a34a' : (diff < 0 ? '#dc2626' : '#64748b');
+
+                        return {
+                            value: val,
+                            label: {
+                                show: true,
+                                position: 'top',
+                                color: field === '인원' ? '#1d4ed8' : '#6b21a8',
+                                fontSize: 11.5,
+                                fontWeight: 800,
+                                fontFamily: 'Pretendard, sans-serif',
+                                formatter: (val) => {
+                                    const baseStr = (field === '지상비' ? formatCompactWon(val) : formatNum(val));
+                                    return tag ? `${baseStr}
+{tag|${tag}}` : baseStr;
+                                },
+                                rich: {
+                                    tag: {
+                                        color: tagColor,
+                                        fontSize: 10,
+                                        fontWeight: 800,
+                                        lineHeight: 14,
+                                        align: 'center'
+                                    }
+                                }
+                            }
+                        };
+                    })
                 }
             ]
         }, true);
@@ -513,7 +768,7 @@ function updateAllCharts(currArray, prevArray, prevNameStr) {
     if (charts.chart2) setGroupChart(charts.chart2, costPrevS, costCurrS, '지상비', new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#c084fc' }, { offset: 1, color: '#6b21a8' }]));
 }
 
-function updateTeamCharts(currArray, prevArray, prevNameStr) {
+function updateTeamCharts(currArray, prevArray, prevNameStr, currNameStr, currSuffix) {
     const c1t = document.getElementById('chart1Title');
     if (c1t) c1t.innerText = `협력사/지역별 송출 인원 비교`;
     const c2t = document.getElementById('chart2Title');
@@ -526,6 +781,8 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
 
     const regions = [...new Set([...currArray, ...prevArray].map(d => d.지역))];
     const prevLegend = prevNameStr || '비교 없음';
+    const currLegend = currNameStr || '당기';
+    const periodSuffix = currSuffix || '당기';
 
     const blueShades = [
         { bg: '#1e3a8a', text: '#ffffff' },
@@ -562,6 +819,20 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
     ];
 
     const setStackedChart = (chartInstance, dataField) => {
+        if (!chartInstance) return;
+        if (partners.length === 0) {
+            chartInstance.clear();
+            chartInstance.setOption({
+                title: {
+                    text: '선택된 기간에 조회된 데이터가 없습니다.',
+                    left: 'center',
+                    top: 'middle',
+                    textStyle: { color: '#94a3b8', fontSize: 14, fontWeight: 500, fontFamily: 'Pretendard, sans-serif' }
+                }
+            });
+            return;
+        }
+
         const shades = (dataField === '인원') ? blueShades : purpleShades;
         const unit = (dataField === '인원') ? '명' : '원';
         const needsZoom = partners.length > 6;
@@ -601,9 +872,9 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                 data: partners.map(() => 0)
             },
             {
-                name: `${currentMonthDef} (당월)`,
+                name: `${currLegend} (${periodSuffix})`,
                 type: 'bar',
-                stack: currentMonthDef,
+                stack: currLegend,
                 silent: true,
                 tooltip: { show: false },
                 legendHoverLink: false,
@@ -702,7 +973,8 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                                 lineHeight: 14,
                                 textBorderColor: 'rgba(0,0,0,0.6)',
                                 textBorderWidth: 2,
-                                formatter: `${r}\n${valStr}`
+                                formatter: `${r}
+${valStr}`
                             }
                         };
                     } else {
@@ -724,7 +996,8 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                                 borderRadius: 4,
                                 padding: [3, 6],
                                 offset: [offInfo.dx, offInfo.dy],
-                                formatter: `${r}\n${valStr}`
+                                formatter: `${r}
+${valStr}`
                             },
                             labelLine: {
                                 show: true,
@@ -746,8 +1019,8 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
             currColorMap[r] = currShade.bg;
 
             seriesData.push({
-                name: `${r} (${currentMonthDef})`,
-                stack: currentMonthDef,
+                name: `${r} (${currLegend})`,
+                stack: currLegend,
                 type: 'bar',
                 barMaxWidth: 44,
                 itemStyle: {
@@ -773,14 +1046,15 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                                 position: 'inside',
                                 align: 'center',
                                 verticalAlign: 'middle',
-                                color: '#ffffff',
+                                color: currShade.text,
                                 fontSize: 10,
                                 fontWeight: 800,
                                 fontFamily: 'Pretendard, sans-serif',
                                 lineHeight: 14,
-                                textBorderColor: 'rgba(0,0,0,0.6)',
+                                textBorderColor: currShade.text === '#ffffff' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
                                 textBorderWidth: 2,
-                                formatter: `${r}\n${valStr}`
+                                formatter: `${r}
+${valStr}`
                             }
                         };
                     } else {
@@ -791,26 +1065,27 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                                 position: 'right',
                                 distance: 8,
                                 align: 'center',
-                                color: dataField === '인원' ? '#1e40af' : '#6b21a8',
+                                color: '#1e293b',
                                 fontSize: 9.5,
-                                fontWeight: 800,
+                                fontWeight: 700,
                                 fontFamily: 'Pretendard, sans-serif',
                                 lineHeight: 13,
-                                backgroundColor: dataField === '인원' ? 'rgba(239, 246, 255, 0.95)' : 'rgba(250, 245, 255, 0.95)',
-                                borderColor: dataField === '인원' ? '#93c5fd' : '#c4b5fd',
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                borderColor: '#cbd5e1',
                                 borderWidth: 1,
                                 borderRadius: 4,
                                 padding: [3, 6],
                                 offset: [offInfo.dx, offInfo.dy],
-                                formatter: `${r}\n${valStr}`
+                                formatter: `${r}
+${valStr}`
                             },
                             labelLine: {
                                 show: true,
                                 showAbove: true,
-                                length: Math.max(10, Math.round(offInfo.dx * 0.75)),
+                                length: Math.max(10, Math.round(Math.abs(offInfo.dx) * 0.75)),
                                 length2: 6,
                                 minTurnAngle: 0,
-                                lineStyle: { color: dataField === '인원' ? '#3b82f6' : '#8b5cf6', width: 1.2 }
+                                lineStyle: { color: currShade.bg, width: 1.2 }
                             }
                         };
                     }
@@ -820,59 +1095,61 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
 
         seriesData.push(
             {
-                name: '',
+                name: '_prev_total_',
                 type: 'bar',
                 stack: prevLegend,
-                silent: true,
+                itemStyle: { color: 'transparent' },
                 tooltip: { show: false },
-                legendHoverLink: false,
-                itemStyle: { color: 'transparent', borderColor: 'transparent' },
+                silent: true,
                 label: {
                     show: true,
                     position: 'top',
                     distance: 6,
-                    align: 'center',
-                    color: '#475569',
+                    color: '#64748b',
                     fontSize: 11,
                     fontWeight: 700,
                     fontFamily: 'Pretendard, sans-serif',
-                    backgroundColor: 'rgba(241, 245, 249, 0.95)',
-                    borderColor: '#cbd5e1',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    padding: [2, 5],
-                    formatter: p => {
+                    formatter: (p) => {
                         const val = prevTotals[p.dataIndex];
-                        return val > 0 ? (dataField === '지상비' ? formatCompactWon(val) : formatNum(val) + '명') : '';
+                        return val > 0 ? (dataField === '지상비' ? formatCompactWon(val) : formatNum(val)) : '';
                     }
                 },
                 data: partners.map(() => 0)
             },
             {
-                name: '',
+                name: '_curr_total_',
                 type: 'bar',
-                stack: currentMonthDef,
-                silent: true,
+                stack: currLegend,
+                itemStyle: { color: 'transparent' },
                 tooltip: { show: false },
-                legendHoverLink: false,
-                itemStyle: { color: 'transparent', borderColor: 'transparent' },
+                silent: true,
                 label: {
                     show: true,
                     position: 'top',
                     distance: 6,
-                    align: 'center',
                     color: dataField === '인원' ? '#1d4ed8' : '#6b21a8',
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: 800,
                     fontFamily: 'Pretendard, sans-serif',
-                    backgroundColor: dataField === '인원' ? 'rgba(219, 234, 254, 0.95)' : 'rgba(237, 233, 254, 0.95)',
-                    borderColor: dataField === '인원' ? '#93c5fd' : '#c4b5fd',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    padding: [2, 5],
-                    formatter: p => {
+                    formatter: (p) => {
                         const val = currTotals[p.dataIndex];
-                        return val > 0 ? (dataField === '지상비' ? formatCompactWon(val) : formatNum(val) + '명') : '';
+                        const pVal = prevTotals[p.dataIndex] || 0;
+                        const diff = val - pVal;
+                        const rate = pVal > 0 ? ((diff / pVal) * 100).toFixed(0) + '%' : '';
+                        const tag = pVal > 0 ? (diff > 0 ? `▲+${rate}` : diff < 0 ? `▼${rate}` : `-`) : '';
+                        const tagColor = diff > 0 ? '#16a34a' : (diff < 0 ? '#dc2626' : '#64748b');
+                        const baseStr = val > 0 ? (dataField === '지상비' ? formatCompactWon(val) : formatNum(val)) : '';
+                        if (!baseStr) return '';
+                        return tag ? `${baseStr}
+{tag|${tag}}` : baseStr;
+                    },
+                    rich: {
+                        tag: {
+                            fontSize: 10,
+                            fontWeight: 800,
+                            lineHeight: 14,
+                            align: 'center'
+                        }
                     }
                 },
                 data: partners.map(() => 0)
@@ -892,53 +1169,57 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
                 extraCssText: 'box-shadow: 0 10px 25px rgba(0,0,0,0.12); border-radius: 12px; min-width: 250px;',
                 formatter: function (params) {
                     if (!params || !params.length) return '';
-                    const pName = params[0].axisValue;
-                    const prevTotal = prevArray.filter(d => d.협력사 === pName).reduce((s, d) => s + (d[dataField] || 0), 0);
-                    const currTotal = currArray.filter(d => d.협력사 === pName).reduce((s, d) => s + (d[dataField] || 0), 0);
-                    const diff = currTotal - prevTotal;
-                    const rate = prevTotal > 0 ? ((diff / prevTotal) * 100).toFixed(1) + '%' : (currTotal > 0 ? '신규' : '0%');
+                    const partnerName = params[0].axisValue;
+                    const partnerIdx = partners.indexOf(partnerName);
+                    const prevTot = prevTotals[partnerIdx] || 0;
+                    const currTot = currTotals[partnerIdx] || 0;
+                    const diff = currTot - prevTot;
+                    const rate = prevTot > 0 ? ((diff / prevTot) * 100).toFixed(1) + '%' : (currTot > 0 ? '신규' : '0%');
                     const diffColor = diff > 0 ? '#16a34a' : (diff < 0 ? '#dc2626' : '#64748b');
                     const diffSign = diff > 0 ? '+' : '';
 
-                    let html = `<div style="font-weight:800; font-size:14px; margin-bottom:8px; color:#0f172a; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px;">🏢 ${pName}</div>
+                    let html = `<div style="font-weight:800; font-size:14px; margin-bottom:8px; color:#0f172a; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px;">🏢 ${partnerName}</div>
                         <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:4px; font-size:12px;">
-                            <span style="color:#64748b;">${prevLegend} (이전):</span>
-                            <strong style="color:#475569;">${formatNum(prevTotal)} ${unit}</strong>
+                            <span style="color:#64748b;">${prevLegend} (이전 총계):</span>
+                            <strong style="color:#475569;">${formatNum(prevTot)} ${unit}</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:6px; font-size:12px;">
-                            <span style="color:${dataField === '인원' ? '#2563eb' : '#7c3aed'}; font-weight:700;">${currentMonthDef} (당월):</span>
-                            <strong style="color:#0f172a;">${formatNum(currTotal)} ${unit}</strong>
+                            <span style="color:${dataField === '인원' ? '#2563eb' : '#7c3aed'}; font-weight:700;">${currLegend} (${periodSuffix} 총계):</span>
+                            <strong style="color:#0f172a;">${formatNum(currTot)} ${unit}</strong>
                         </div>
-                        <div style="display:flex; justify-content:space-between; gap:16px; padding:4px 0 6px 0; border-top:1px dashed #e2e8f0; border-bottom:1px dashed #e2e8f0; font-size:12px;">
-                            <span style="color:#64748b;">증감:</span>
+                        <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:10px; padding-top:4px; border-top:1px dashed #e2e8f0; font-size:12px;">
+                            <span style="color:#64748b;">총 증감:</span>
                             <strong style="color:${diffColor};">${diffSign}${formatNum(diff)} ${unit} (${diffSign}${rate})</strong>
                         </div>`;
 
-                    const pCurrItems = currArray.filter(d => d.협력사 === pName && d[dataField] > 0);
-                    if (pCurrItems.length > 0) {
-                        html += `<div style="margin-top:8px; font-size:11px;">`;
-                        html += `<div style="font-weight:700; color:#64748b; margin-bottom:4px;">[당월 지역별 내역]</div>`;
-                        pCurrItems.forEach(item => {
-                            const dotColor = currColorMap[item.지역] || '#3b82f6';
-                            html += `<div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:3px; color:#334155;">
-                                <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${dotColor}; margin-right:4px;"></span>${item.지역}:</span>
-                                <strong>${formatNum(item[dataField])}${unit}</strong>
+                    const currPartnerData = currArray.filter(d => d.협력사 === partnerName && (d[dataField] || 0) > 0)
+                        .sort((a, b) => b[dataField] - a[dataField]);
+
+                    if (currPartnerData.length > 0) {
+                        html += `<div style="font-weight:700; color:#64748b; margin-bottom:4px;">[${periodSuffix} 지역별 내역]</div>`;
+                        currPartnerData.forEach(d => {
+                            const dotColor = currColorMap[d.지역] || '#2563eb';
+                            const share = currTot > 0 ? ((d[dataField] / currTot) * 100).toFixed(1) + '%' : '0%';
+                            html += `<div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:3px; font-size:11.5px;">
+                                <span style="display:inline-flex; align-items:center; gap:6px;">
+                                    <span style="width:8px; height:8px; border-radius:50%; background:${dotColor}; display:inline-block;"></span>
+                                    <span style="color:#334155;">${d.지역}</span>
+                                </span>
+                                <span style="color:#0f172a; font-weight:600;">${formatNum(d[dataField])} ${unit} <span style="color:#94a3b8; font-weight:normal; font-size:10.5px;">(${share})</span></span>
                             </div>`;
                         });
-                        html += `</div>`;
                     }
+
                     return html;
                 }
             },
             legend: {
-                show: true,
+                data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
                 top: 0,
                 right: 12,
-                data: [`${prevLegend} (이전)`, `${currentMonthDef} (당월)`],
                 textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
             },
-            grid: { left: '20px', right: '48px', top: '70px', bottom: needsZoom ? '70px' : '45px', containLabel: true },
-            barCategoryGap: '35%',
+            grid: { left: '3%', right: '4%', top: '70px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
             xAxis: {
                 type: 'category',
                 data: partners,
@@ -947,6 +1228,7 @@ function updateTeamCharts(currArray, prevArray, prevNameStr) {
             },
             yAxis: {
                 type: 'value',
+                max: maxTotal,
                 axisLabel: { color: '#64748b', fontSize: 11, fontFamily: 'Pretendard, sans-serif', formatter: val => dataField === '지상비' ? formatCompactWon(val) : formatNum(val) },
                 splitLine: { lineStyle: { color: 'rgba(0,0,0,0.06)' } }
             },
@@ -986,7 +1268,21 @@ function updatePieChart(dataArray) {
     const pieTitle = document.getElementById('pieChartTitle');
     const pieLabel = document.getElementById('pieTargetLabel');
 
-    if (!charts.pieChart || !dataArray || dataArray.length === 0) return;
+    if (!charts.pieChart) return;
+    if (!dataArray || dataArray.length === 0) {
+        charts.pieChart.clear();
+        charts.pieChart.setOption({
+            title: {
+                text: '선택된 기간에 조회된 데이터가 없습니다.',
+                left: 'center',
+                top: 'middle',
+                textStyle: { color: '#94a3b8', fontSize: 14, fontWeight: 500, fontFamily: 'Pretendard, sans-serif' }
+            }
+        });
+        const pieLegendList = document.getElementById('pieLegendList');
+        if (pieLegendList) pieLegendList.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8; font-size:0.9rem;">데이터가 없습니다.</div>';
+        return;
+    }
 
     const donutColors = [
         '#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626',
@@ -1081,124 +1377,116 @@ function updatePieChart(dataArray) {
             borderWidth: 1,
             padding: [10, 14],
             textStyle: { color: '#1e293b', fontSize: 12, fontFamily: 'Pretendard, sans-serif' },
-            extraCssText: 'box-shadow: 0 8px 20px rgba(0,0,0,0.12); border-radius: 10px;',
+            extraCssText: 'box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-radius: 10px;',
             formatter: function (p) {
-                return `<div style="font-weight:700; font-size:13px; color:#0f172a; margin-bottom:4px;">${p.name}</div>
-                    <div style="display:flex; justify-content:space-between; gap:14px; font-size:12px;">
+                const pct = p.percent !== undefined ? p.percent.toFixed(1) + '%' : '';
+                return `<div style="font-weight:700; font-size:13px; margin-bottom:4px; color:#0f172a;">${p.name}</div>
+                    <div style="display:flex; justify-content:space-between; gap:16px; font-size:12px;">
                         <span style="color:#64748b;">송출 인원:</span>
-                        <strong style="color:#2563eb;">${formatNum(p.value)}명 (${p.percent}%)</strong>
+                        <strong style="color:#2563eb;">${formatNum(p.value)}명</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; margin-top:2px;">
+                        <span style="color:#64748b;">점유율:</span>
+                        <strong style="color:#0f172a;">${pct}</strong>
                     </div>`;
             }
         },
-        legend: { show: false },
-        graphic: [
-            {
-                type: 'text',
-                left: 'center',
-                top: '43%',
-                style: {
-                    text: '총 송출 인원',
-                    textAlign: 'center',
-                    fill: '#64748b',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    fontFamily: 'Pretendard, sans-serif'
-                }
-            },
-            {
-                type: 'text',
-                left: 'center',
-                top: '51%',
-                style: {
-                    text: `${formatNum(totalVal)}명`,
-                    textAlign: 'center',
-                    fill: '#0f172a',
-                    fontSize: 19,
-                    fontWeight: 800,
-                    fontFamily: 'Pretendard, sans-serif'
+        title: {
+            text: `{val|${formatNum(totalVal)}}{unit|명}
+{sub|총 송출 인원}`,
+            left: 'center',
+            top: '38%',
+            textStyle: {
+                rich: {
+                    val: { fontSize: 22, fontWeight: 800, color: '#0f172a', fontFamily: 'Pretendard, sans-serif', lineHeight: 28 },
+                    unit: { fontSize: 13, fontWeight: 600, color: '#64748b', fontFamily: 'Pretendard, sans-serif', padding: [0, 0, 4, 2] },
+                    sub: { fontSize: 11.5, color: '#64748b', fontWeight: 500, fontFamily: 'Pretendard, sans-serif', lineHeight: 18 }
                 }
             }
-        ],
+        },
+        legend: { show: false },
         series: [
             {
-                name: pieTitle ? pieTitle.innerText : '송출 비중',
+                name: pieMode === 'region' ? '협력사' : '지역',
                 type: 'pie',
                 radius: ['52%', '76%'],
-                center: ['50%', '50%'],
+                center: ['50%', '48%'],
                 avoidLabelOverlap: true,
-                itemStyle: { borderRadius: 6, borderColor: '#ffffff', borderWidth: 2.5 },
+                itemStyle: {
+                    borderRadius: 6,
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                },
                 label: {
-                    show: false
+                    show: false,
+                    position: 'center'
                 },
                 emphasis: {
                     scale: true,
-                    scaleSize: 6,
+                    scaleSize: 8,
                     itemStyle: {
-                        shadowBlur: 10,
+                        shadowBlur: 15,
                         shadowOffsetX: 0,
                         shadowColor: 'rgba(0, 0, 0, 0.2)'
                     }
                 },
-                labelLine: { show: false },
                 data: pieData
             }
         ]
     }, true);
 
-    // 커스텀 대시보드 표(테이블) 형태 범례 렌더링
-    const legendList = document.getElementById('pieLegendList');
-    if (legendList) {
-        legendList.innerHTML = '';
-        pieData.forEach((item, idx) => {
-            const pct = totalVal > 0 ? ((item.value / totalVal) * 100).toFixed(1) : '0.0';
-            const color = donutColors[idx % donutColors.length];
-            const rankBadgeClass = idx === 0 ? 'pie-rank-1' : (idx === 1 ? 'pie-rank-2' : (idx === 2 ? 'pie-rank-3' : 'pie-rank-n'));
-            const barWidth = totalVal > 0 ? Math.min(100, Math.round((item.value / totalVal) * 100)) : 0;
-            const row = document.createElement('div');
-            row.className = 'pie-legend-row';
-            row.innerHTML = `
-                <div class="pie-legend-rank ${rankBadgeClass}">${idx + 1}</div>
-                <div class="pie-legend-name-col">
-                    <span class="pie-legend-dot" style="background:${color};"></span>
-                    <span class="pie-legend-name" title="${item.name}">${item.name}</span>
-                </div>
-                <div class="pie-legend-val">${formatNum(item.value)}<span class="pie-legend-unit">명</span></div>
-                <div class="pie-legend-pct-col">
-                    <div class="pie-legend-pct">${pct}%</div>
-                    <div class="pie-legend-bar-bg">
-                        <div class="pie-legend-bar-fill" style="width:${barWidth}%; background:${color};"></div>
-                    </div>
-                </div>
-            `;
+    renderPieLegendList(pieData, totalVal, donutColors);
+}
 
-            // 인터랙션: 호버 시 차트 해당 조각 강조
-            row.addEventListener('mouseenter', () => {
-                if (charts.pieChart) {
-                    charts.pieChart.dispatchAction({ type: 'highlight', dataIndex: idx });
-                    charts.pieChart.dispatchAction({ type: 'showTip', seriesIndex: 0, dataIndex: idx });
-                }
-            });
-            row.addEventListener('mouseleave', () => {
-                if (charts.pieChart) {
-                    charts.pieChart.dispatchAction({ type: 'downplay', dataIndex: idx });
-                    charts.pieChart.dispatchAction({ type: 'hideTip' });
-                }
-            });
+function renderPieLegendList(pieData, totalVal, donutColors) {
+    const listEl = document.getElementById('pieLegendList');
+    if (!listEl) return;
+    listEl.innerHTML = '';
 
-            legendList.appendChild(row);
-        });
+    if (!pieData || pieData.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8; font-size:0.9rem;">데이터가 없습니다.</div>';
+        return;
     }
 
-    requestAnimationFrame(() => {
-        charts.pieChart.resize();
-        setTimeout(() => charts.pieChart.resize(), 100);
+    pieData.forEach((item, idx) => {
+        const color = donutColors[idx % donutColors.length];
+        const pct = totalVal > 0 ? ((item.value / totalVal) * 100).toFixed(1) + '%' : '0%';
+        const rank = idx + 1;
+        const rankBadgeClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : 'rank-other'));
+
+        const row = document.createElement('div');
+        row.className = 'pie-legend-item';
+        row.innerHTML = `
+            <span class="pie-rank-badge ${rankBadgeClass}">${rank}</span>
+            <div class="pie-legend-name" title="${item.name}">
+                <span class="pie-color-dot" style="background:${color};"></span>
+                <span class="pie-name-text">${item.name}</span>
+            </div>
+            <span class="pie-legend-val">${formatNum(item.value)}명</span>
+            <span class="pie-legend-pct">${pct}</span>
+        `;
+
+        row.addEventListener('mouseenter', () => {
+            if (charts.pieChart) {
+                charts.pieChart.dispatchAction({ type: 'highlight', dataIndex: idx });
+                charts.pieChart.dispatchAction({ type: 'showTip', dataIndex: idx });
+            }
+        });
+        row.addEventListener('mouseleave', () => {
+            if (charts.pieChart) {
+                charts.pieChart.dispatchAction({ type: 'downplay', dataIndex: idx });
+                charts.pieChart.dispatchAction({ type: 'hideTip' });
+            }
+        });
+
+        listEl.appendChild(row);
     });
 }
 
-function computeQuadrantData(dataArray) {
+function computeQuadrantData(dataArray, baseAllData) {
     if (!dataArray || dataArray.length === 0) return [];
 
-    const baseCurr = rawData.filter(d => d.월 === currentMonthDef);
+    const baseCurr = (baseAllData && baseAllData.length > 0) ? baseAllData : dataArray;
     const regionStats = {};
 
     baseCurr.forEach(d => {
@@ -1284,12 +1572,12 @@ const tableColsGroup = [
     { key: '_qOrder', name: '구분 기준', align: 'center' }
 ];
 
-function renderTable(dataArray) {
+function renderTable(dataArray, baseAllData) {
     const tHeadRow = document.getElementById('tableHeadRow');
     const tBody = document.getElementById('tableBody');
     const showTeam = (selectedTeam === 'all');
 
-    let enrichedArray = computeQuadrantData(dataArray);
+    let enrichedArray = computeQuadrantData(dataArray, baseAllData);
 
     if (selectedQuadrant && selectedQuadrant !== 'all') {
         enrichedArray = enrichedArray.filter(d => d._qCode === selectedQuadrant);
@@ -1309,6 +1597,13 @@ function renderTable(dataArray) {
         th.innerHTML = `<span class="sort-btn" onclick="handleSort('${col.key}')">${col.name} ${iconHtml}</span>`;
         if (tHeadRow) tHeadRow.appendChild(th);
     });
+
+    if (enrichedArray.length === 0) {
+        if (tBody) {
+            tBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 48px; color:#94a3b8; font-size:0.95rem;">선택된 기간에 조회된 데이터가 없습니다.</td></tr>`;
+        }
+        return;
+    }
 
     let displayArray = [...enrichedArray];
 
