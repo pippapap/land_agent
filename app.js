@@ -707,7 +707,7 @@ function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuf
                                 fontSize: 11,
                                 fontWeight: 700,
                                 fontFamily: 'Pretendard, sans-serif',
-                                formatter: val => (field === '지상비' ? formatCompactWon(val) : formatNum(val))
+                                formatter: p => { const v = (p && typeof p === 'object' && p.value !== undefined) ? p.value : p; return field === '지상비' ? formatCompactWon(v) : formatNum(v); }
                             }
                         };
                     })
@@ -737,10 +737,10 @@ function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuf
                                 fontSize: 11.5,
                                 fontWeight: 800,
                                 fontFamily: 'Pretendard, sans-serif',
-                                formatter: (val) => {
-                                    const baseStr = (field === '지상비' ? formatCompactWon(val) : formatNum(val));
-                                    return tag ? `${baseStr}
-{tag|${tag}}` : baseStr;
+                                formatter: (p) => {
+                                    const v = (p && typeof p === 'object' && p.value !== undefined) ? p.value : p;
+                                    const baseStr = (field === '지상비' ? formatCompactWon(v) : formatNum(v));
+                                    return tag ? `${baseStr}\n{tag|${tag}}` : baseStr;
                                 },
                                 rich: {
                                     tag: {
@@ -1755,6 +1755,7 @@ function renderTable(dataArray, baseAllData) {
         });
     }
 }
+
 
 
 
