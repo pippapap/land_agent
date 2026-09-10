@@ -182,6 +182,83 @@
             background-color: var(--accent-blue);
         }
 
+        /* 본부 탭 (클릭 가능) */
+        .nav-division-tab {
+            padding: 10px 24px;
+            cursor: pointer;
+            font-size: 0.92rem;
+            color: #334155;
+            font-weight: 700;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            letter-spacing: -0.01em;
+            background: linear-gradient(90deg, rgba(0,0,0,0.02), transparent);
+            margin-top: 4px;
+        }
+
+        .nav-division-tab:hover {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.07), transparent);
+            color: var(--accent-navy);
+            border-left-color: rgba(37, 99, 235, 0.3);
+        }
+
+        .nav-division-tab.active {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), transparent);
+            color: var(--accent-navy);
+            border-left-color: var(--accent-blue);
+        }
+
+        .nav-division-tab.active .nav-division-icon {
+            filter: none;
+        }
+
+        .nav-division-icon {
+            font-size: 0.88rem;
+            flex-shrink: 0;
+            opacity: 0.75;
+        }
+
+        .nav-division-tab.active .nav-division-icon {
+            opacity: 1;
+        }
+
+        /* 소속 팀 항목 (들여쓰기) */
+        .nav-sub-item {
+            padding: 9px 24px 9px 38px;
+            font-size: 0.88rem;
+            color: #64748b;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .nav-sub-item::before {
+            content: '';
+            position: absolute;
+            left: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: background 0.2s;
+        }
+
+        .nav-sub-item:hover::before {
+            background: var(--accent-blue);
+        }
+
+        .nav-sub-item.active::before {
+            background: var(--accent-blue);
+        }
+
+        .nav-sub-item.active {
+            padding-left: 38px;
+        }
+
         .nav-item[data-team="all"] {
             position: relative;
             margin-bottom: 4px;

@@ -1,4 +1,4 @@
-﻿// === 전역 데이터 관리 ===
+// === 전역 데이터 관리 ===
 let rawData = [];
 let selectedTeam = 'all';
 let selectedQuadrant = 'all'; // 'all' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
@@ -38,6 +38,23 @@ const DIVISION_CONFIG = [
     }
 ];
 const TEAM_ORDER = DIVISION_CONFIG.flatMap(d => d.teams);
+
+// 본부 이름에서 소속 팀 목록 반환
+function getDivisionTeams(divisionName) {
+    const found = DIVISION_CONFIG.find(d => d.division === divisionName);
+    return found ? found.teams : [];
+}
+
+// selectedTeam이 본부 선택인지 확인 ('division:영업1본부' 형태)
+function isDivisionSelected() {
+    return selectedTeam && selectedTeam.startsWith('division:');
+}
+
+// selectedTeam에서 본부명 추출
+function getSelectedDivisionName() {
+    if (!isDivisionSelected()) return null;
+    return selectedTeam.replace('division:', '');
+}
 
 async function fetchJsonSafe(url) {
     try {
@@ -290,14 +307,18 @@ function initSidebar() {
     teamNav.appendChild(allLi);
 
     DIVISION_CONFIG.forEach(div => {
-        const divHeader = document.createElement('li');
-        divHeader.className = 'nav-division-header';
-        divHeader.innerHTML = `<span>${div.division}</span>`;
-        teamNav.appendChild(divHeader);
+        // 본부 헤더를 클릭 가능한 탭으로 변경
+        const divKey = `division:${div.division}`;
+        const divLi = document.createElement('li');
+        divLi.className = 'nav-item nav-division-tab' + (selectedTeam === divKey ? ' active' : '');
+        divLi.dataset.team = divKey;
+        divLi.innerHTML = `<span class="nav-division-icon">🏢</span><span>${div.division}</span>`;
+        divLi.addEventListener('click', (e) => changeTeam(divKey, e.currentTarget));
+        teamNav.appendChild(divLi);
 
         div.teams.forEach(t => {
             const li = document.createElement('li');
-            li.className = 'nav-item' + (selectedTeam === t ? ' active' : '');
+            li.className = 'nav-item nav-sub-item' + (selectedTeam === t ? ' active' : '');
             li.dataset.team = t;
             li.innerHTML = `<span>${t}</span>`;
             li.addEventListener('click', (e) => changeTeam(t, e.currentTarget));
@@ -310,7 +331,15 @@ function changeTeam(tName, el) {
     selectedTeam = tName;
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('currentTeamTitle').innerText = (tName === 'all') ? '전체 현황' : tName;
+    let titleText;
+    if (tName === 'all') {
+        titleText = '전체 현황';
+    } else if (tName.startsWith('division:')) {
+        titleText = tName.replace('division:', '') + ' 현황';
+    } else {
+        titleText = tName;
+    }
+    document.getElementById('currentTeamTitle').innerText = titleText;
     pieTarget = 'all';
     applyFilter();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -369,7 +398,16 @@ function setupEventListeners() {
         pieSelect.addEventListener('change', (e) => {
             pieTarget = e.target.value;
             const baseCurr = getPeriodData(periodType, selectedPeriod);
-            const currTarget = (selectedTeam === 'all') ? baseCurr : baseCurr.filter(d => d.팀 === selectedTeam);
+            let currTarget;
+            const divName = getSelectedDivisionName();
+            if (selectedTeam === 'all') {
+                currTarget = baseCurr;
+            } else if (divName) {
+                const divTeams = getDivisionTeams(divName);
+                currTarget = baseCurr.filter(d => divTeams.includes(d.팀));
+            } else {
+                currTarget = baseCurr.filter(d => d.팀 === selectedTeam);
+            }
             updatePieChart(currTarget);
         });
     }
@@ -467,11 +505,31 @@ function applyFilter() {
     const kpiCTitle = document.getElementById('kpiCostTitle');
     if (kpiCTitle) kpiCTitle.innerText = `${pLabelSuffix} 총 지상비 (비용)`;
 
+    // 본부 선택 여부 판단
+    const divisionName = getSelectedDivisionName();
+    const divisionTeams = divisionName ? getDivisionTeams(divisionName) : [];
+
     const kpiAvgCostTitle = document.getElementById('kpiAvgCostTitle');
     if (kpiAvgCostTitle) {
-        kpiAvgCostTitle.innerText = (selectedTeam === 'all') 
-            ? `${pLabelSuffix} 평균 인당 지상비 (전체)` 
-            : `${pLabelSuffix} 평균 인당 지상비 (${selectedTeam})`;
+        if (selectedTeam === 'all') {
+            kpiAvgCostTitle.innerText = `${pLabelSuffix} 평균 인당 지상비 (전체)`;
+        } else if (divisionName) {
+            kpiAvgCostTitle.innerText = `${pLabelSuffix} 평균 인당 지상비 (${divisionName})`;
+        } else {
+            kpiAvgCostTitle.innerText = `${pLabelSuffix} 평균 인당 지상비 (${selectedTeam})`;
+        }
+    }
+
+    // 비교 섹션 레이블 업데이트
+    const compareSectionLabel = document.getElementById('compareSectionLabel');
+    if (compareSectionLabel) {
+        if (selectedTeam === 'all') {
+            compareSectionLabel.innerText = '팀별 비교';
+        } else if (divisionName) {
+            compareSectionLabel.innerText = `${divisionName} 소속 팀별 비교`;
+        } else {
+            compareSectionLabel.innerText = '협력사/지역별 비교';
+        }
     }
 
     document.querySelectorAll('.kpi-card .kpi-trend-item').forEach(item => {
@@ -499,10 +557,26 @@ function applyFilter() {
     const baseKpiMom = kpiMomKey ? getPeriodData(periodType, kpiMomKey) : [];
     const baseKpiYoy = kpiYoyKey ? getPeriodData(periodType, kpiYoyKey) : [];
 
-    const currTarget = (selectedTeam === 'all') ? baseCurr : baseCurr.filter(d => d.팀 === selectedTeam);
-    const chartPrevTarget = (selectedTeam === 'all') ? baseChartPrev : baseChartPrev.filter(d => d.팀 === selectedTeam);
-    const kpiMomTarget = (selectedTeam === 'all') ? baseKpiMom : baseKpiMom.filter(d => d.팀 === selectedTeam);
-    const kpiYoyTarget = (selectedTeam === 'all') ? baseKpiYoy : baseKpiYoy.filter(d => d.팀 === selectedTeam);
+    // 데이터 필터링: 전체 / 본부 / 팀 구분
+    let currTarget, chartPrevTarget, kpiMomTarget, kpiYoyTarget;
+    if (selectedTeam === 'all') {
+        currTarget = baseCurr;
+        chartPrevTarget = baseChartPrev;
+        kpiMomTarget = baseKpiMom;
+        kpiYoyTarget = baseKpiYoy;
+    } else if (divisionName) {
+        // 본부 선택: 소속 팀 전체 데이터 취합
+        currTarget = baseCurr.filter(d => divisionTeams.includes(d.팀));
+        chartPrevTarget = baseChartPrev.filter(d => divisionTeams.includes(d.팀));
+        kpiMomTarget = baseKpiMom.filter(d => divisionTeams.includes(d.팀));
+        kpiYoyTarget = baseKpiYoy.filter(d => divisionTeams.includes(d.팀));
+    } else {
+        // 단일 팀 선택
+        currTarget = baseCurr.filter(d => d.팀 === selectedTeam);
+        chartPrevTarget = baseChartPrev.filter(d => d.팀 === selectedTeam);
+        kpiMomTarget = baseKpiMom.filter(d => d.팀 === selectedTeam);
+        kpiYoyTarget = baseKpiYoy.filter(d => d.팀 === selectedTeam);
+    }
 
     const sumP_curr = currTarget.reduce((s, d) => s + (d.인원 || 0), 0);
     const sumC_curr = currTarget.reduce((s, d) => s + (d.지상비 || 0), 0);
@@ -530,9 +604,11 @@ function applyFilter() {
     document.getElementById('kpiAvgCostTrendMom').innerHTML = getTrendHTML(avgCost_curr, avgCost_mom, '원');
     document.getElementById('kpiAvgCostTrendYoy').innerHTML = getTrendHTML(avgCost_curr, avgCost_yoy, '원');
 
-    if (selectedTeam === 'all') {
-        updateAllCharts(currTarget, chartPrevTarget, chartCompareLabel, currPeriodLabel, pLabelSuffix);
+    if (selectedTeam === 'all' || divisionName) {
+        // 전체 또는 본부 선택: 팀별 비교 차트
+        updateAllCharts(currTarget, chartPrevTarget, chartCompareLabel, currPeriodLabel, pLabelSuffix, divisionName || null);
     } else {
+        // 단일 팀: 협력사/지역별 차트
         updateTeamCharts(currTarget, chartPrevTarget, chartCompareLabel, currPeriodLabel, pLabelSuffix);
     }
 
@@ -566,11 +642,11 @@ function formatCompactWon(val) {
     return formatNum(val);
 }
 
-function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuffix) {
+function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuffix, divisionLabel) {
     const c1t = document.getElementById('chart1Title');
-    if (c1t) c1t.innerText = `팀별 송출 인원 비교`;
+    if (c1t) c1t.innerText = divisionLabel ? `${divisionLabel} 소속 팀별 송출 인원 비교` : `팀별 송출 인원 비교`;
     const c2t = document.getElementById('chart2Title');
-    if (c2t) c2t.innerText = `팀별 지상비 비교`;
+    if (c2t) c2t.innerText = divisionLabel ? `${divisionLabel} 소속 팀별 지상비 비교` : `팀별 지상비 비교`;
 
     const aggregate = (dataArr) => {
         const result = {};
