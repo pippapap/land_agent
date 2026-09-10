@@ -1,5 +1,73 @@
 [
   {
+    "label": "2025-01",
+    "file": "data_25_01.json"
+  },
+  {
+    "label": "2025-02",
+    "file": "data_25_02.json"
+  },
+  {
+    "label": "2025-03",
+    "file": "data_25_03.json"
+  },
+  {
+    "label": "2025-04",
+    "file": "data_25_04.json"
+  },
+  {
+    "label": "2025-05",
+    "file": "data_25_05.json"
+  },
+  {
+    "label": "2025-06",
+    "file": "data_25_06.json"
+  },
+  {
+    "label": "2025-07",
+    "file": "data_25_07.json"
+  },
+  {
+    "label": "2025-08",
+    "file": "data_25_08.json"
+  },
+  {
+    "label": "2025-09",
+    "file": "data_25_09.json"
+  },
+  {
+    "label": "2025-10",
+    "file": "data_25_10.json"
+  },
+  {
+    "label": "2025-11",
+    "file": "data_25_11.json"
+  },
+  {
+    "label": "2025-12",
+    "file": "data_25_12.json"
+  },
+  {
+    "label": "2026-01",
+    "file": "data_26_01.json"
+  },
+  {
+    "label": "2026-02",
+    "file": "data_26_02.json"
+  },
+  {
+    "label": "2026-03",
+    "file": "data_26_03.json"
+  },
+  {
+    "label": "2026-04",
+    "file": "data_26_04.json"
+  },
+  {
+    "label": "2026-05",
+    "file": "data_26_05.json"
+  },
+  {
     "label": "2026-06",
     "file": "data_26_06.json"
   },
