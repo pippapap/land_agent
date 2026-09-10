@@ -56,6 +56,37 @@ function getSelectedDivisionName() {
     return selectedTeam.replace('division:', '');
 }
 
+/**
+ * 본부 탭용: 다른 팀이 같은 (협력사 + 지역)을 공유할 때 중복 행을 합산
+ * 하나의 (협력사, 지역) 조합으로 병합하며
+ * 인당 지상비 = 합산 지상비 / 합산 인원 (가중평균)
+ */
+function mergeByPartnerRegion(dataArray) {
+    const map = new Map();
+    dataArray.forEach(d => {
+        const key = `${d.협력사}___${d.지역}`;
+        if (!map.has(key)) {
+            map.set(key, {
+                팀: d.팀,       // 첫 번째 팀명 보관 (참고용)
+                협력사: d.협력사,
+                지역: d.지역,
+                인원: 0,
+                지상비: 0,
+                '인당 지상비': 0
+            });
+        }
+        const item = map.get(key);
+        item.인원 += (Number(d.인원) || 0);
+        item.지상비 += (Number(d.지상비) || 0);
+    });
+    const result = Array.from(map.values());
+    result.forEach(item => {
+        // 인당 지상비 = 합산 지상비 / 합산 인원 (가중평균)
+        item['인당 지상비'] = item.인원 > 0 ? Math.round(item.지상비 / item.인원) : 0;
+    });
+    return result;
+}
+
 async function fetchJsonSafe(url) {
     try {
         const cacheBuster = (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
@@ -404,7 +435,9 @@ function setupEventListeners() {
                 currTarget = baseCurr;
             } else if (divName) {
                 const divTeams = getDivisionTeams(divName);
-                currTarget = baseCurr.filter(d => divTeams.includes(d.팀));
+                const divFiltered = baseCurr.filter(d => divTeams.includes(d.팀));
+                // 본부 탭: (협력사, 지역) 기준 중복 합산
+                currTarget = mergeByPartnerRegion(divFiltered);
             } else {
                 currTarget = baseCurr.filter(d => d.팀 === selectedTeam);
             }
@@ -612,8 +645,13 @@ function applyFilter() {
         updateTeamCharts(currTarget, chartPrevTarget, chartCompareLabel, currPeriodLabel, pLabelSuffix);
     }
 
-    updatePieChart(currTarget);
-    renderTable(currTarget, baseCurr);
+    // 본부 탭일 때: (협력사, 지역) 기준으로 중복 행 합산
+    // 다른 팀이 같은 협력사+지역 사용 시 파이차트/테이블에서 중복 로우 방지
+    const pieTableTarget = divisionName ? mergeByPartnerRegion(currTarget) : currTarget;
+    const pieTableBase = divisionName ? mergeByPartnerRegion(baseCurr.filter(d => divisionTeams.includes(d.팀))) : baseCurr;
+
+    updatePieChart(pieTableTarget);
+    renderTable(pieTableTarget, pieTableBase);
 }
 
 function initCharts() {
@@ -1651,6 +1689,7 @@ const tableColsGroup = [
 function renderTable(dataArray, baseAllData) {
     const tHeadRow = document.getElementById('tableHeadRow');
     const tBody = document.getElementById('tableBody');
+    // 표시 모드: 전체 탭은 팀목 표시, 본부/단일팀 탭은 팀목 숨김
     const showTeam = (selectedTeam === 'all');
 
     let enrichedArray = computeQuadrantData(dataArray, baseAllData);
