@@ -981,8 +981,8 @@ function applyFilter() {
             momBtn.innerText = '전분기';
             yoyBtn.innerText = '전년 동분기';
         } else if (periodType === 'year') {
-            momBtn.innerText = '전년';
-            yoyBtn.innerText = '재작년';
+            momBtn.innerText = '전년도';
+            yoyBtn.innerText = '전전년도';
         } else if (periodType === 'custom') {
             momBtn.innerText = '전년 동시점';
             yoyBtn.innerText = '전전년도 동시점';
@@ -999,8 +999,8 @@ function applyFilter() {
         yoyTrendLabel = '전년 동분기 대비';
     } else if (periodType === 'year') {
         pLabelSuffix = '연간';
-        momTrendLabel = '전년 대비';
-        yoyTrendLabel = '재작년 대비';
+        momTrendLabel = '전년도 대비';
+        yoyTrendLabel = '전전년도 대비';
     } else if (periodType === 'custom') {
         pLabelSuffix = '선택기간';
         momTrendLabel = '전년 동시점 대비';
@@ -1239,14 +1239,14 @@ function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuf
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
                 orient: 'vertical',
-                top: -8,
+                top: 2,
                 right: 12,
-                itemGap: 7,
+                itemGap: 6,
                 itemWidth: 12,
                 itemHeight: 12,
                 textStyle: { color: '#475569', fontSize: 11.5, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
             },
-            grid: { left: '3%', right: '4%', top: '55px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
+            grid: { left: '3%', right: '4%', top: '58px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
             barCategoryGap: '40%',
             xAxis: {
                 type: 'category',
@@ -1809,14 +1809,14 @@ ${valStr}`
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
                 orient: 'vertical',
-                top: -8,
+                top: 2,
                 right: 12,
-                itemGap: 7,
+                itemGap: 6,
                 itemWidth: 12,
                 itemHeight: 12,
                 textStyle: { color: '#475569', fontSize: 11.5, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
             },
-            grid: { left: '3%', right: '4%', top: '55px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
+            grid: { left: '3%', right: '4%', top: '58px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
             xAxis: {
                 type: 'category',
                 data: partners,
