@@ -1230,14 +1230,13 @@ function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuf
             },
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
-                type: 'scroll',
-                orient: 'horizontal',
+                orient: 'vertical',
                 top: 0,
-                left: 'auto',
                 right: 12,
-                itemGap: 12,
-                textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' },
-                pageIconSize: 10
+                itemGap: 4,
+                itemWidth: 12,
+                itemHeight: 12,
+                textStyle: { color: '#475569', fontSize: 11.5, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
             },
             grid: { left: '3%', right: '4%', top: '55px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
             barCategoryGap: '40%',
@@ -1801,14 +1800,13 @@ ${valStr}`
             },
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
-                type: 'scroll',
-                orient: 'horizontal',
+                orient: 'vertical',
                 top: 0,
-                left: 'auto',
                 right: 12,
-                itemGap: 12,
-                textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' },
-                pageIconSize: 10
+                itemGap: 4,
+                itemWidth: 12,
+                itemHeight: 12,
+                textStyle: { color: '#475569', fontSize: 11.5, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
             },
             grid: { left: '3%', right: '4%', top: '55px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
             xAxis: {
@@ -1917,15 +1915,10 @@ function updatePieChart(dataArray) {
         }
 
         const top7 = sortedPartners.slice(0, 7);
-        const others = sortedPartners.slice(7);
-        // 차트(도넛): TOP7 + 기타 포함 (시각화용)
+        // 도넛 차트 및 테이블 모두 기타 항목 비노출 (TOP7만 노출)
+        // 단, 총 송출 인원(totalVal)과 각 점유율(%)은 기타를 포함한 전체 기준으로 유지 및 산출
         pieData = top7.map(([name, val]) => ({ name: name, value: val }));
-        if (others.length > 0) {
-            const otherSum = others.reduce((s, x) => s + x[1], 0);
-            pieData.push({ name: `기타 (${others.length}개사)`, value: otherSum });
-        }
-        // 테이블 범례: 기타 제외 TOP7만 (totalVal은 기타 포함 전체 기준)
-        legendDataForTable = top7.map(([name, val]) => ({ name: name, value: val }));
+        legendDataForTable = pieData;
 
     } else {
         if (pieTitle) pieTitle.innerText = `협력사별 지역 송출 비중`;
@@ -1975,7 +1968,8 @@ function updatePieChart(dataArray) {
             textStyle: { color: '#1e293b', fontSize: 12, fontFamily: 'Pretendard, sans-serif' },
             extraCssText: 'box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-radius: 10px;',
             formatter: function (p) {
-                const pct = p.percent !== undefined ? p.percent.toFixed(1) + '%' : '';
+                // 점유율 계산: 차트의 슬라이스 합이 아닌 기타 포함 전체 송출인원(totalVal) 기준
+                const pct = totalVal > 0 ? ((p.value / totalVal) * 100).toFixed(1) + '%' : '0%';
                 return `<div style="font-weight:700; font-size:13px; margin-bottom:4px; color:#0f172a;">${p.name}</div>
                     <div style="display:flex; justify-content:space-between; gap:16px; font-size:12px;">
                         <span style="color:#64748b;">송출 인원:</span>
@@ -2352,18 +2346,6 @@ function renderTable(dataArray, baseAllData) {
             });
         });
     }
-
-    // 그룹 헤더 행 sticky top: th 실제 높이 기준으로 동적 설정
-    requestAnimationFrame(() => {
-        const thEl = document.querySelector('#tableHeadRow th');
-        if (thEl) {
-            const thHeight = thEl.getBoundingClientRect().height;
-            const topVal = `${Math.round(thHeight)}px`;
-            document.querySelectorAll('.partner-group-header-row, .group-header-row').forEach(row => {
-                row.style.top = topVal;
-            });
-        }
-    });
 }
 
 
