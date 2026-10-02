@@ -331,14 +331,14 @@ function updatePeriodDisplay() {
     if (periodType === 'month') {
         const ym = (typeof selectedPeriod === 'string') ? selectedPeriod : (selectedPeriod?.start || '2026-08');
         const [y, m] = ym.split('-');
-        textEl.innerText = `${y}년 ${m}월 ~ ${y}년 ${m}월`;
+        textEl.innerText = `${y}년 ${m}월`;
     } else if (periodType === 'quarter') {
         const str = (typeof selectedPeriod === 'string') ? selectedPeriod : '2026-Q3';
         const [y, q] = str.split('-Q');
-        textEl.innerText = `${y}년 ${q}분기 ~ ${y}년 ${q}분기`;
+        textEl.innerText = `${y}년 ${q}분기`;
     } else if (periodType === 'year') {
         const y = (typeof selectedPeriod === 'string') ? selectedPeriod : '2026';
-        textEl.innerText = `${y}년 ~ ${y}년`;
+        textEl.innerText = `${y}년`;
     } else if (periodType === 'custom') {
         let start = '', end = '';
         if (typeof selectedPeriod === 'object' && selectedPeriod !== null) {
@@ -977,7 +977,7 @@ function applyFilter() {
             yoyBtn.innerText = '재작년';
         } else if (periodType === 'custom') {
             momBtn.innerText = '전년 동시점';
-            yoyBtn.innerText = '전년 이전년도 동시점';
+            yoyBtn.innerText = '전전년도 동시점';
         }
     }
 
@@ -996,7 +996,7 @@ function applyFilter() {
     } else if (periodType === 'custom') {
         pLabelSuffix = '선택기간';
         momTrendLabel = '전년 동시점 대비';
-        yoyTrendLabel = '전년 이전년도 대비';
+        yoyTrendLabel = '전전년도 동시점 대비';
     }
 
     const kpiPTitle = document.getElementById('kpiPersonnelTitle');
@@ -1230,11 +1230,16 @@ function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuf
             },
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
+                type: 'scroll',
+                orient: 'horizontal',
                 top: 0,
+                left: 'auto',
                 right: 12,
-                textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
+                itemGap: 12,
+                textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' },
+                pageIconSize: 10
             },
-            grid: { left: '3%', right: '4%', top: '70px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
+            grid: { left: '3%', right: '4%', top: '55px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
             barCategoryGap: '40%',
             xAxis: {
                 type: 'category',
@@ -1796,11 +1801,16 @@ ${valStr}`
             },
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
+                type: 'scroll',
+                orient: 'horizontal',
                 top: 0,
+                left: 'auto',
                 right: 12,
-                textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
+                itemGap: 12,
+                textStyle: { color: '#475569', fontSize: 12, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' },
+                pageIconSize: 10
             },
-            grid: { left: '3%', right: '4%', top: '70px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
+            grid: { left: '3%', right: '4%', top: '55px', bottom: needsZoom ? '65px' : '45px', containLabel: true },
             xAxis: {
                 type: 'category',
                 data: partners,
@@ -1875,6 +1885,7 @@ function updatePieChart(dataArray) {
     let totalVal = 0;
     let topItemName = '-';
     let topItemPct = '0%';
+    let legendDataForTable = []; // 테이블 범례용 (기타 제외)
 
     if (pieMode === 'region') {
         if (pieTitle) pieTitle.innerText = `지역별 협력사 송출 점유율`;
@@ -1907,11 +1918,14 @@ function updatePieChart(dataArray) {
 
         const top7 = sortedPartners.slice(0, 7);
         const others = sortedPartners.slice(7);
+        // 차트(도넛): TOP7 + 기타 포함 (시각화용)
         pieData = top7.map(([name, val]) => ({ name: name, value: val }));
         if (others.length > 0) {
             const otherSum = others.reduce((s, x) => s + x[1], 0);
             pieData.push({ name: `기타 (${others.length}개사)`, value: otherSum });
         }
+        // 테이블 범례: 기타 제외 TOP7만 (totalVal은 기타 포함 전체 기준)
+        legendDataForTable = top7.map(([name, val]) => ({ name: name, value: val }));
 
     } else {
         if (pieTitle) pieTitle.innerText = `협력사별 지역 송출 비중`;
@@ -1946,6 +1960,7 @@ function updatePieChart(dataArray) {
         }
 
         pieData = sortedRegions.map(([name, val]) => ({ name: name, value: val }));
+        legendDataForTable = pieData; // 협력사별 모드: 전체 지역 표시
     }
 
     charts.pieChart.setOption({
@@ -2016,7 +2031,8 @@ function updatePieChart(dataArray) {
         ]
     }, true);
 
-    renderPieLegendList(pieData, totalVal, donutColors);
+    // 테이블 범례: region 전체 지역 종합 시 기타 제외 TOP7, 그 외 pieData 그대로
+    renderPieLegendList(legendDataForTable.length > 0 ? legendDataForTable : pieData, totalVal, donutColors);
 }
 
 function renderPieLegendList(pieData, totalVal, donutColors) {
@@ -2336,7 +2352,20 @@ function renderTable(dataArray, baseAllData) {
             });
         });
     }
+
+    // 그룹 헤더 행 sticky top: th 실제 높이 기준으로 동적 설정
+    requestAnimationFrame(() => {
+        const thEl = document.querySelector('#tableHeadRow th');
+        if (thEl) {
+            const thHeight = thEl.getBoundingClientRect().height;
+            const topVal = `${Math.round(thHeight)}px`;
+            document.querySelectorAll('.partner-group-header-row, .group-header-row').forEach(row => {
+                row.style.top = topVal;
+            });
+        }
+    });
 }
+
 
 
 
