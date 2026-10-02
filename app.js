@@ -853,10 +853,18 @@ function setupEventListeners() {
         });
     }
 
-    // 외부 클릭 시 캘린더 피커 닫기
+    // 팝오버 내부 클릭 시 이벤트 버블링 차단 (년도 변경/프리셋 클릭 시 innerHTML 교체로 인한 팝업 꺼짐 방지)
+    const periodPickerPopover = document.getElementById('periodPickerPopover');
+    if (periodPickerPopover) {
+        periodPickerPopover.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+
+    // 외부 클릭 시 캘린더 피커 닫기 (방금 DOM에서 제거된 내부 요소 클릭은 제외)
     document.addEventListener('click', (e) => {
         const wrapper = document.getElementById('periodPickerWrapper');
-        if (wrapper && !wrapper.contains(e.target)) {
+        if (wrapper && !wrapper.contains(e.target) && document.body.contains(e.target)) {
             closePeriodPicker();
         }
     });
@@ -1231,9 +1239,9 @@ function updateAllCharts(currArray, prevArray, prevNameStr, currNameStr, currSuf
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
                 orient: 'vertical',
-                top: 0,
+                top: -8,
                 right: 12,
-                itemGap: 4,
+                itemGap: 7,
                 itemWidth: 12,
                 itemHeight: 12,
                 textStyle: { color: '#475569', fontSize: 11.5, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
@@ -1801,9 +1809,9 @@ ${valStr}`
             legend: {
                 data: [`${prevLegend} (이전)`, `${currLegend} (${periodSuffix})`],
                 orient: 'vertical',
-                top: 0,
+                top: -8,
                 right: 12,
-                itemGap: 4,
+                itemGap: 7,
                 itemWidth: 12,
                 itemHeight: 12,
                 textStyle: { color: '#475569', fontSize: 11.5, fontWeight: 600, fontFamily: 'Pretendard, sans-serif' }
@@ -1886,7 +1894,10 @@ function updatePieChart(dataArray) {
     let legendDataForTable = []; // 테이블 범례용 (기타 제외)
 
     if (pieMode === 'region') {
-        if (pieTitle) pieTitle.innerText = `지역별 협력사 송출 점유율`;
+        const isAll = (pieTarget === 'all');
+        if (pieTitle) {
+            pieTitle.innerText = isAll ? `지역별 협력사 송출 점유율 (TOP 10)` : `${pieTarget} 협력사 송출 점유율 (TOP 10)`;
+        }
         if (pieLabel) pieLabel.innerText = '기준 지역:';
 
         const allRegions = [...new Set(dataArray.map(d => d.지역))].sort();
@@ -1914,14 +1925,17 @@ function updatePieChart(dataArray) {
             topItemPct = totalVal > 0 ? ((sortedPartners[0][1] / totalVal) * 100).toFixed(1) + '%' : '0%';
         }
 
-        const top7 = sortedPartners.slice(0, 7);
-        // 도넛 차트 및 테이블 모두 기타 항목 비노출 (TOP7만 노출)
-        // 단, 총 송출 인원(totalVal)과 각 점유율(%)은 기타를 포함한 전체 기준으로 유지 및 산출
-        pieData = top7.map(([name, val]) => ({ name: name, value: val }));
+        const top10 = sortedPartners.slice(0, 10);
+        // 도넛 차트 및 테이블 모두 TOP 10만 노출 (기타 항목 비노출)
+        // 단, 총 송출 인원(totalVal)과 각 점유율(%)은 전체 기준으로 유지 및 산출
+        pieData = top10.map(([name, val]) => ({ name: name, value: val }));
         legendDataForTable = pieData;
 
     } else {
-        if (pieTitle) pieTitle.innerText = `협력사별 지역 송출 비중`;
+        const isAll = (pieTarget === 'all');
+        if (pieTitle) {
+            pieTitle.innerText = isAll ? `협력사별 지역 송출 비중 (TOP 10)` : `${pieTarget} 지역 송출 비중`;
+        }
         if (pieLabel) pieLabel.innerText = '기준 협력사:';
 
         const partnerSums = {};
@@ -1952,8 +1966,9 @@ function updatePieChart(dataArray) {
             topItemPct = totalVal > 0 ? ((sortedRegions[0][1] / totalVal) * 100).toFixed(1) + '%' : '0%';
         }
 
-        pieData = sortedRegions.map(([name, val]) => ({ name: name, value: val }));
-        legendDataForTable = pieData; // 협력사별 모드: 전체 지역 표시
+        const top10 = sortedRegions.slice(0, 10);
+        pieData = top10.map(([name, val]) => ({ name: name, value: val }));
+        legendDataForTable = pieData; // 협력사별 모드: 전체 지역 표시 (TOP 10)
     }
 
     charts.pieChart.setOption({
