@@ -1998,8 +1998,8 @@ function updatePieChart(dataArray) {
         },
         title: {
             text: `{val|${formatNum(totalVal)}}{unit|명}\n{sub|총 송출 인원}`,
-            left: 'center',
-            top: 'middle',
+            left: '50%',
+            top: '40%',
             textAlign: 'center',
             textStyle: {
                 rich: {
