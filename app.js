@@ -2000,12 +2000,14 @@ function updatePieChart(dataArray) {
             text: `{val|${formatNum(totalVal)}}{unit|명}
 {sub|총 송출 인원}`,
             left: 'center',
-            top: '38%',
+            top: '50%',
+            textAlign: 'center',
+            textVerticalAlign: 'middle',
             textStyle: {
                 rich: {
-                    val: { fontSize: 22, fontWeight: 800, color: '#0f172a', fontFamily: 'Pretendard, sans-serif', lineHeight: 28 },
-                    unit: { fontSize: 13, fontWeight: 600, color: '#64748b', fontFamily: 'Pretendard, sans-serif', padding: [0, 0, 4, 2] },
-                    sub: { fontSize: 11.5, color: '#64748b', fontWeight: 500, fontFamily: 'Pretendard, sans-serif', lineHeight: 18 }
+                    val: { fontSize: 28, fontWeight: 800, color: '#0f172a', fontFamily: 'Pretendard, sans-serif', lineHeight: 34 },
+                    unit: { fontSize: 15, fontWeight: 600, color: '#64748b', fontFamily: 'Pretendard, sans-serif', padding: [0, 0, 4, 3] },
+                    sub: { fontSize: 13, color: '#64748b', fontWeight: 500, fontFamily: 'Pretendard, sans-serif', lineHeight: 22 }
                 }
             }
         },
@@ -2015,7 +2017,7 @@ function updatePieChart(dataArray) {
                 name: pieMode === 'region' ? '협력사' : '지역',
                 type: 'pie',
                 radius: ['52%', '76%'],
-                center: ['50%', '48%'],
+                center: ['50%', '50%'],
                 avoidLabelOverlap: true,
                 itemStyle: {
                     borderRadius: 6,
