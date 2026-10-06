@@ -1997,12 +1997,10 @@ function updatePieChart(dataArray) {
             }
         },
         title: {
-            text: `{val|${formatNum(totalVal)}}{unit|명}
-{sub|총 송출 인원}`,
+            text: `{val|${formatNum(totalVal)}}{unit|명}\n{sub|총 송출 인원}`,
             left: 'center',
-            top: '50%',
+            top: 'middle',
             textAlign: 'center',
-            textVerticalAlign: 'middle',
             textStyle: {
                 rich: {
                     val: { fontSize: 28, fontWeight: 800, color: '#0f172a', fontFamily: 'Pretendard, sans-serif', lineHeight: 34 },
